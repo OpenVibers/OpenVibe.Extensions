@@ -1,0 +1,29 @@
+{
+  "repository": "OpenVibers/OpenVibe.Extensions",
+  "stage": "alpha",
+  "code": true,
+  "wave": "W18",
+  "plan": "OpenVibe End-to-End Realignment & Implementation Plan, revision 3 (20 Sep 2026)",
+  "adr": "OpenVibe.Contracts ADR-023 (first-party client surfaces)",
+  "surfaces": {
+    "browser": {
+      "name": "OpenVibe Coupons Helper",
+      "version": "0.1.0",
+      "manifest": 3,
+      "targets": ["chromium >= 111", "firefox >= 128"],
+      "api": "https://openvibe.coupons (OpenVibe.Coupons public API)",
+      "permissions": ["activeTab", "storage"],
+      "hostPermissions": ["https://openvibe.coupons/*"],
+      "credential": "optional cpx_ install token (coupons.lookup, coupons.report); no Network session",
+      "publishedToStores": false,
+      "loadedInChrome": "yes: headless Chrome 150 loads the packed build; a development build looked up and reported against a local OpenVibe.Coupons",
+      "loadedInFirefox": "not yet verified"
+    }
+  },
+  "pending": [
+    "move Live's browser-extension/openvibe-kiosk-companion and hardware/ here (ADR-023), with a redirect README in Live",
+    "store listings (Chrome Web Store, addons.mozilla.org) and the store extension ids in COUPONS_EXTENSION_ORIGINS"
+  ],
+  "deployed": false,
+  "updated": "2026-09-22"
+}

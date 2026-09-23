@@ -1,0 +1,21 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.1
+      # No dependencies: the tests and the packer use Node's standard library only.
+      - run: npm test
+      - run: npm run pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openvibe-coupons-helper
+          path: dist/*.zip
+          retention-days: 14
