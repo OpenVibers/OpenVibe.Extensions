@@ -21,6 +21,7 @@ const COUPON = {
 const GOOD_TOKEN = `cpx_${'a'.repeat(43)}`;
 const REVOKED_TOKEN = `cpx_${'r'.repeat(43)}`;
 const NO_REPORT_TOKEN = `cpx_${'n'.repeat(43)}`;
+const SUBMITTER_TOKEN = `cpx_${'s'.repeat(43)}`;   // the person who submitted COUPON
 
 /** A stub of the Coupons API with the behaviour the extension relies on. */
 function startStub({ delayMs = 0 } = {}) {
@@ -37,7 +38,7 @@ function startStub({ delayMs = 0 } = {}) {
             }, delayMs);
             const auth = req.headers.authorization || '';
             if (auth === `Bearer ${REVOKED_TOKEN}`) return send(401, { code: 'token.revoked', detail: 'disconnected' });
-            if (auth && ![`Bearer ${GOOD_TOKEN}`, `Bearer ${NO_REPORT_TOKEN}`].includes(auth)) return send(401, { code: 'token.invalid', detail: 'unknown' });
+            if (auth && ![`Bearer ${GOOD_TOKEN}`, `Bearer ${NO_REPORT_TOKEN}`, `Bearer ${SUBMITTER_TOKEN}`].includes(auth)) return send(401, { code: 'token.invalid', detail: 'unknown' });
             const u = new URL(req.url, 'http://x');
             if (req.method === 'GET' && u.pathname === '/api/v1/merchants/resolve') {
                 const host = u.searchParams.get('host');
@@ -50,6 +51,7 @@ function startStub({ delayMs = 0 } = {}) {
             if (req.method === 'POST' && u.pathname === `/api/v1/coupons/${COUPON.id}/report`) {
                 if (!auth) return send(401, { code: 'auth.required' });
                 if (auth === `Bearer ${NO_REPORT_TOKEN}`) return send(403, { code: 'token.scope' });
+                if (auth === `Bearer ${SUBMITTER_TOKEN}`) return send(403, { code: 'report.own_submission', detail: 'you submitted this code; its status comes from other people\'s reports' });
                 return send(201, { accepted: true, deduplicated: false, corrected: false, coupon: { ...COUPON, status: 'reported_working', confidence: 0.67 } });
             }
             return send(404, { code: 'route.not_found' });
@@ -88,4 +90,4 @@ function fakeExt({ url = null, token = null, hasPermission = true } = {}) {
     };
 }
 
-module.exports = { check, done, startStub, recordingFetch, fakeExt, MERCHANT, COUPON, GOOD_TOKEN, REVOKED_TOKEN, NO_REPORT_TOKEN };
+module.exports = { check, done, startStub, recordingFetch, fakeExt, MERCHANT, COUPON, GOOD_TOKEN, REVOKED_TOKEN, NO_REPORT_TOKEN, SUBMITTER_TOKEN };

@@ -31,6 +31,7 @@
         if (code === 'auth.required') return 'Connect the extension in the settings to report.';
         if (code === 'report.rate_limited' || code === 'lookup.rate_limited' || (err && err.status === 429)) return 'Too many requests right now. Try again in a minute.';
         if (code === 'coupon.not_active') return 'This code is no longer in active results.';
+        if (code === 'report.own_submission') return 'You can’t report on a code you submitted.';
         if (code === 'network.timeout' || code === 'network.error') return 'Could not reach OpenVibe.Coupons.';
         return 'Something went wrong. Try again later.';
     }
