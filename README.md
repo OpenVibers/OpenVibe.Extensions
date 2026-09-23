@@ -5,8 +5,9 @@
 **Status:** alpha (roadmap Wave 18, client part). The extension builds, its tests pass, and headless
 Chrome 150 loads the packed build. A development build of it looked up codes and sent a report
 against a local OpenVibe.Coupons. It is **not published** to any store, and it hasn't been verified
-in Firefox yet. OpenVibe.Coupons itself isn't deployed yet, so the release build has nothing to
-talk to until it is.
+in Firefox yet. OpenVibe.Coupons runs on the production host but only on loopback, with an empty
+database, and `https://openvibe.coupons` still serves its placeholder, so the release build has
+nothing to talk to until Coupons launches publicly.
 **Decision record:** [ADR-023](https://github.com/OpenVibers/OpenVibe.Contracts/blob/main/docs/adr/ADR-023-client-surfaces.md) (first-party client surfaces and their home). Roadmap §4.2 D.
 **License:** MIT.
 
@@ -128,8 +129,8 @@ shows "Allow access to openvibe.coupons".
 
 ## Before a store release (for the lead)
 
-1. **Deploy OpenVibe.Coupons** (see its README). The release build only talks to
-   `https://openvibe.coupons`.
+1. **Launch OpenVibe.Coupons publicly** (see its README; it is deployed on the host loopback-only
+   and not yet public). The release build only talks to `https://openvibe.coupons`.
 2. **Store listings:** submit the zip to the Chrome Web Store and addons.mozilla.org. The privacy
    disclosure is the table above: the hostname of the active tab, only on open, sent to
    openvibe.coupons. `browser_specific_settings.gecko.data_collection_permissions` declares

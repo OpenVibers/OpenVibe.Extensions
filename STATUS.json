@@ -21,9 +21,10 @@
     }
   },
   "pending": [
+    "public launch of OpenVibe.Coupons: it runs on the production host loopback-only (127.0.0.1:4850, empty database) and https://openvibe.coupons still serves the OpenVibe.Sites placeholder, so the release build has no API to talk to yet",
     "move Live's browser-extension/openvibe-kiosk-companion and hardware/ here (ADR-023), with a redirect README in Live",
     "store listings (Chrome Web Store, addons.mozilla.org) and the store extension ids in COUPONS_EXTENSION_ORIGINS"
   ],
   "deployed": false,
-  "updated": "2026-09-22"
+  "updated": "2026-09-23"
 }
