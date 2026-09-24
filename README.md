@@ -19,7 +19,8 @@ per-install permissions. ADR-023 gives clients their own repository.
 | Surface | Directory | State |
 |---|---|---|
 | OpenVibe Coupons Helper (Chromium and Firefox, Manifest V3) | `browser/` | alpha, described below |
-| Kiosk companion (Firefox) and the hardware/Raspberry Pi companions | not yet here | Planned by ADR-023: move them from OpenVibe.Live's `browser-extension/` and `hardware/`, leaving a redirect README in Live. That move isn't part of this change. |
+| Kiosk companion (Firefox, new-tab and history bridge for the /kiosk page) | `kiosk-companion/` | Moved from OpenVibe.Live `browser-extension/openvibe-kiosk-companion/` (ADR-023, Live 9c5aa64); Live keeps a redirect README |
+| Hardware / Raspberry Pi companions (streamer and controller scripts) | `hardware/` | Moved from OpenVibe.Live `hardware/` (ADR-023, Live 9c5aa64); Live keeps a redirect README |
 | Desktop client | — | Planned by ADR-023 for the long term. Nothing exists. |
 
 ## The OpenVibe Coupons Helper (`browser/`)
