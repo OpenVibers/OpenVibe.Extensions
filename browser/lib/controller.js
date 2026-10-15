@@ -1,13 +1,17 @@
 /*
  * The popup's logic, without the DOM (so Node tests can drive it):
  *
- *   const c = createController({ api, platform, host });
- *   const vm = await c.open();          // what to show for the active tab
+ *   const c = createController({ api, platform, host, handoff });
+ *   const vm = await c.open();          // the codes for the active tab's shop
+ *   c.page()                            // { handoff, rental }: which buttons to offer
+ *   await c.keepOnBoard()               // open the Rent board with this page (a new tab)
+ *   await c.watchPage()                 // open a new Watch for this page (a new tab)
  *   await c.report(couponId, 'worked')  // → { ok, message }
  *
- * open() reads the active tab's URL once, keeps only its hostname (host.hostnameOf), and asks the
- * API which shop that is and which codes it has. That hostname is the only thing about the page
- * that ever leaves the browser.
+ * open() reads the active tab's URL and title once. Only the hostname (host.hostnameOf) is sent
+ * anywhere: to the Coupons API, to say which shop that is. The URL and title stay in this closure
+ * for the two hand-offs, which open a tab on openvibe.rent or openvibe.watch only when the person
+ * presses their button (lib/handoff.js cleans the URL first).
  *
  * View models:
  *   { state: 'not_a_site' }                                   browser pages, files, IPs, local names
@@ -40,10 +44,20 @@
         const api = deps.api;
         const platform = deps.platform;
         const host = deps.host;
+        const handoff = deps.handoff || null;
+        let tab = { url: null, title: '' };
+
+        async function handOff(build) {
+            const target = handoff && build(tab.url, tab.title);
+            if (!target) return { ok: false, message: 'This page cannot be sent there.' };
+            await platform.tabs.open(target);
+            return { ok: true };
+        }
 
         return {
             async open() {
-                const url = await platform.tabs.activeUrl();
+                tab = await platform.tabs.active();
+                const url = tab.url;
                 const hostname = host.hostnameOf(url);
                 if (!hostname) return { state: 'not_a_site' };
                 const connected = Boolean(await platform.storage.getToken());
@@ -56,6 +70,15 @@
                     return { state: 'error', host: hostname, message: messageFor(err), code: (err && err.code) || null };
                 }
             },
+
+            /** Which hand-offs make sense for this page: any web page can go to the board or a watch; a rental site leads with the board. */
+            page() {
+                const ok = Boolean(handoff && host.hostnameOf(tab.url) && handoff.boardUrl(tab.url, tab.title));
+                return { handoff: ok, rental: ok && deps.isRental ? deps.isRental(tab.url) : false };
+            },
+
+            keepOnBoard() { return handOff(function (u, t) { return handoff.boardUrl(u, t); }); },
+            watchPage() { return handOff(function (u, t) { return handoff.watchUrl(u, t); }); },
 
             async report(couponId, outcome, reason) {
                 try {

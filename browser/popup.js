@@ -1,5 +1,5 @@
 /*
- * Popup wiring: DOM only (no innerHTML — every value is set as text), clipboard, and the calls to
+ * OpenVibe Companion popup wiring: DOM only (no innerHTML — every value is set as text), clipboard, and the calls to
  * the controller. All logic lives in lib/controller.js.
  */
 (function () {
@@ -8,7 +8,8 @@
     const config = self.OVConfig;
     const platform = self.OVPlatform.createPlatform(ext, config);
     const api = self.OVApi.createApiClient({ origin: config.API_ORIGIN, fetch: self.fetch.bind(self), getToken: platform.storage.getToken, timeoutMs: config.TIMEOUT_MS });
-    const controller = self.OVController.createController({ api: api, platform: platform, host: self.OVHost });
+    const handoff = self.OVHandoff.createHandoff(config);
+    const controller = self.OVController.createController({ api: api, platform: platform, host: self.OVHost, handoff: handoff, isRental: self.OVHandoff.isRental });
     const fmt = self.OVFormat;
     const content = document.getElementById('content');
     const site = document.getElementById('site');
@@ -83,13 +84,38 @@
             note);
     }
 
+    /** The two hand-off buttons: the board leads on a rental listing, Watch everywhere else. */
+    function renderActions() {
+        const p = controller.page();
+        const section = document.getElementById('actions');
+        if (!p.handoff) return;
+        const keep = document.getElementById('keep');
+        const watch = document.getElementById('watch');
+        const note = document.getElementById('actions-note');
+        document.getElementById('actions-lede').textContent = p.rental
+            ? 'A rental listing? Keep it on your board with your notes, next to the ones from every other site.'
+            : 'Keep this page on your Rent board, or have OpenVibe.Watch tell you when it changes.';
+        (p.rental ? keep : watch).classList.add('primary');
+        const go = function (fn) {
+            return async function () {
+                const r = await fn();
+                if (r.ok) window.close();
+                else note.textContent = r.message;
+            };
+        };
+        keep.addEventListener('click', go(controller.keepOnBoard));
+        watch.addEventListener('click', go(controller.watchPage));
+        section.hidden = false;
+    }
+
     async function render() {
         const vm = await controller.open();
         if (vm.host) site.textContent = vm.host;
-        if (vm.state === 'not_a_site') return show(el('p', { text: 'Open this on a shop’s website.' }));
-        if (vm.state === 'no_merchant') return show(el('p', { text: 'OpenVibe.Coupons has no codes for ' + vm.host + '.' }), el('p', null, link('Submit a code', '/submit')));
+        renderActions();
+        if (vm.state === 'not_a_site') return show(el('p', { text: 'Open this on a website: a shop for its coupon codes, a rental listing for your board, any page to watch.' }));
+        if (vm.state === 'no_merchant') return show(el('p', { className: 'muted', text: 'No coupon codes for ' + vm.host + ' on OpenVibe.Coupons. ' }, link('Submit one', '/submit')));
         if (vm.state === 'error') return show(el('p', { text: vm.message }));
-        const header = el('h2', { text: vm.merchant.name });
+        const header = el('h2', { text: 'Coupon codes for ' + vm.merchant.name });
         if (!vm.coupons.length) return show(header, el('p', { text: 'No active codes right now.' }), el('p', null, link('See the shop page', '/m/' + encodeURIComponent(vm.merchant.slug))));
         return show(header, ...vm.coupons.map(function (c) { return couponNode(c, vm.connected); }), el('p', { className: 'muted' }, link('All codes and details', '/m/' + encodeURIComponent(vm.merchant.slug))));
     }

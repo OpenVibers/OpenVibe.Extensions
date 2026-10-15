@@ -80,8 +80,8 @@ const ORIGIN = 'https://openvibe.coupons';
             const rel = path.relative(DIR, f);
             if (rel !== path.join('lib', 'api.js')) assert.doesNotMatch(src.replace(/fetch: self\.fetch\.bind\(self\)/g, ''), /\bfetch\s*\(/, `${rel} makes a request itself`);
         }
-        const tabUse = files.filter((f) => /\btabs\.query\b/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
-        assert.deepStrictEqual(tabUse, [path.join('lib', 'platform.js')], 'only the platform wrapper touches tabs');
+        const tabUse = files.filter((f) => /\btabs\.(query|create|update)\b/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
+        assert.deepStrictEqual(tabUse, [path.join('lib', 'platform.js')], 'only the platform wrapper touches tabs (it opens only hand-off pages)');
     });
 
     done();

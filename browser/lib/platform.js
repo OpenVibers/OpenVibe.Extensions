@@ -1,8 +1,11 @@
 /*
- * The browser APIs the helper uses, in one place (Chromium `chrome.*` and Firefox `browser.*`):
+ * The browser APIs the Companion uses, in one place (Chromium `chrome.*` and Firefox `browser.*`):
  *
- *   tabs.activeUrl()        the active tab's URL — available because the user opened the popup
- *                           (activeTab); handed straight to host.hostnameOf and dropped
+ *   tabs.active()           the active tab's URL and title — available because the user opened the
+ *                           popup (activeTab); the controller sends only the hostname anywhere, and
+ *                           keeps the rest for a hand-off the person may press
+ *   tabs.open(url)          open a new tab on one of config.HANDOFF_ORIGINS (and nowhere else) —
+ *                           tabs.create needs no permission
  *   storage.getToken/setToken/clearToken   the optional cpx_ install token, in storage.local
  *                           (never storage.sync: it stays on this device)
  *   permissions.hasApi/requestApi          the host permission for the API origin (Firefox
@@ -25,9 +28,15 @@
         };
         return {
             tabs: {
-                async activeUrl() {
+                async active() {
                     const tabs = await call(ext.tabs.query, ext.tabs, [{ active: true, currentWindow: true }]);
-                    return tabs && tabs[0] && typeof tabs[0].url === 'string' ? tabs[0].url : null;
+                    const t = tabs && tabs[0];
+                    return { url: t && typeof t.url === 'string' ? t.url : null, title: t && typeof t.title === 'string' ? t.title : '' };
+                },
+                async open(url) {
+                    const ok = typeof url === 'string' && config.HANDOFF_ORIGINS.some(function (o) { return url.indexOf(o + '/') === 0; });
+                    if (!ok) throw new TypeError('not an OpenVibe hand-off page');
+                    await call(ext.tabs.create, ext.tabs, [{ url: url }]);
                 },
             },
             storage: {

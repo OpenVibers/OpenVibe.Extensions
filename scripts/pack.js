@@ -3,9 +3,9 @@
 /**
  * Packs browser/ into a zip for loading or store review. It never uploads anything anywhere.
  *
- *   node scripts/pack.js                          → dist/openvibe-coupons-helper-<version>.zip
+ *   node scripts/pack.js                          → dist/openvibe-companion-<version>.zip
  *   node scripts/pack.js --api http://localhost:4850
- *                                                 → dist/openvibe-coupons-helper-<version>-dev.zip,
+ *                                                 → dist/openvibe-companion-<version>-dev.zip,
  *     a development build whose API origin (lib/config.js), host permission and CSP connect-src
  *     are rewritten together. Only https origins, or http://localhost / http://127.0.0.1.
  *
@@ -93,7 +93,7 @@ function build({ api = DEFAULT_ORIGIN, outDir = path.join(ROOT, 'dist') } = {}) 
         if (audit.problems.length) throw new Error(`permission audit failed:\n  - ${audit.problems.join('\n  - ')}`);
         const version = audit.manifest.version;
         fs.mkdirSync(outDir, { recursive: true });
-        const out = path.join(outDir, `openvibe-coupons-helper-${version}${api === DEFAULT_ORIGIN ? '' : '-dev'}.zip`);
+        const out = path.join(outDir, `openvibe-companion-${version}${api === DEFAULT_ORIGIN ? '' : '-dev'}.zip`);
         fs.writeFileSync(out, zip([...files].map(([name, data]) => ({ name, data }))));
         return { out, files: [...files.keys()], origin: api };
     } finally {

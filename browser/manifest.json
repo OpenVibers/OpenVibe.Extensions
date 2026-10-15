@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "OpenVibe Coupons Helper",
-  "short_name": "OV Coupons",
-  "version": "0.1.0",
-  "description": "Shows the coupon codes OpenVibe.Coupons knows for the shop you are on, with their status, expiry and restrictions. Reads only the hostname, only when you open it.",
-  "homepage_url": "https://openvibe.coupons/connect-extension",
+  "name": "OpenVibe Companion",
+  "short_name": "OpenVibe",
+  "version": "0.2.0",
+  "description": "Coupon codes for the shop you are on, and one click to keep a rental listing on your OpenVibe.Rent board or watch a page with OpenVibe.Watch. Reads the tab only when you open it.",
+  "homepage_url": "https://github.com/OpenVibers/OpenVibe.Extensions",
   "author": "OpenVibers",
   "icons": {
     "16": "icons/icon-16.png",
@@ -13,7 +13,7 @@
     "128": "icons/icon-128.png"
   },
   "action": {
-    "default_title": "Coupon codes for this shop",
+    "default_title": "OpenVibe Companion",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",
@@ -37,7 +37,7 @@
   "minimum_chrome_version": "111",
   "browser_specific_settings": {
     "gecko": {
-      "id": "coupons-helper@openvibe.network",
+      "id": "companion@openvibe.network",
       "strict_min_version": "128.0",
       "data_collection_permissions": {
         "required": ["browsingActivity"]

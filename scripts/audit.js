@@ -12,6 +12,8 @@
  *   CSP                    script-src 'self' only, connect-src only the API origin, no unsafe-*
  *   pages                  popup/options HTML load only local scripts, no inline script
  *   config                 lib/config.js API_ORIGIN equals the host permission's origin
+ *   hand-offs              lib/config.js HANDOFF_ORIGINS are https://openvibe.<tld> sites only (the
+ *                          tabs the Companion may open when you press a button; never requested)
  */
 const fs = require('fs');
 const path = require('path');
@@ -63,8 +65,11 @@ function auditDir(dir) {
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
     const configSrc = fs.readFileSync(path.join(dir, 'lib', 'config.js'), 'utf8');
     const origin = (configSrc.match(/API_ORIGIN:\s*'([^']+)'/) || [])[1];
+    const handoffs = ((configSrc.match(/HANDOFF_ORIGINS:\s*Object\.freeze\(\[([^\]]*)\]\)/) || [])[1] || '').split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
     const problems = [];
     if (!origin) problems.push('lib/config.js has no API_ORIGIN');
+    if (!handoffs.length) problems.push('lib/config.js has no HANDOFF_ORIGINS');
+    for (const h of handoffs) if (!/^https:\/\/openvibe\.[a-z]+$/.test(h)) problems.push(`hand-off origin ${h} is not an https://openvibe.<tld> site`);
     problems.push(...auditManifest(manifest, { apiOrigin: origin }));
     for (const page of ['popup.html', 'options.html']) problems.push(...auditPage(fs.readFileSync(path.join(dir, page), 'utf8'), page));
     return { manifest, origin, problems };
