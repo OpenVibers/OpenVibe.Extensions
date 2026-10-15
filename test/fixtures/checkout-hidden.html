@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Checkout</title></head>
+<body>
+<p><a href="#" id="open">Have a promo code?</a></p>
+<div id="box" style="display:none">
+  <input id="code" placeholder="Enter coupon code" type="text">
+  <button id="redeem">Redeem</button>
+  <span id="err"></span>
+</div>
+<table><tr><th>Total</th><td id="sum">€1.234,56</td></tr></table>
+<script>
+// A framework-style field: the page keeps its own copy of the value from input events, so a bare .value write is not seen.
+var state = '';
+document.getElementById('code').addEventListener('input', function (e) { state = e.target.value; });
+document.getElementById('open').addEventListener('click', function (e) { e.preventDefault(); document.getElementById('box').style.display = 'block'; });
+document.getElementById('redeem').addEventListener('click', function () {
+  window.tried = (window.tried || []).concat(state);
+  setTimeout(function () {
+    if (state === 'WELCOME') document.getElementById('sum').textContent = '€1.111,10';
+    else document.getElementById('err').textContent = 'Sorry, this coupon has expired.';
+  }, 200);
+});
+</script>
+</body></html>

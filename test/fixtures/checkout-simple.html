@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Cart</title></head>
+<body>
+<h1>Your cart</h1>
+<div class="summary">
+  <div class="row"><span>Subtotal</span><span>$50.00</span></div>
+  <div class="row"><span>Shipping</span><span>$4.00</span></div>
+  <div class="row total"><span>Order total</span><span id="total">$54.00</span></div>
+</div>
+<form id="checkout" onsubmit="window.submits = (window.submits || 0) + 1; return false;">
+  <div class="promo">
+    <label for="promo">Promo code</label>
+    <input id="promo" name="promo_code" type="text">
+    <button type="button" id="apply">Apply</button>
+    <p id="msg"></p>
+  </div>
+  <input name="email" type="text" placeholder="Email">
+  <button type="submit" id="place">Place order</button>
+</form>
+<script>
+document.getElementById('apply').addEventListener('click', function () {
+  var code = document.getElementById('promo').value;
+  window.tried = (window.tried || []).concat(code);
+  setTimeout(function () {
+    if (code === 'SAVE10') { document.getElementById('total').textContent = '$44.00'; document.getElementById('msg').textContent = 'SAVE10 applied'; }
+    else document.getElementById('msg').textContent = 'The code ' + code + ' is not valid.';
+  }, 300);
+});
+</script>
+</body></html>

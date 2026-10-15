@@ -91,11 +91,15 @@
         if (!p.handoff) return;
         const keep = document.getElementById('keep');
         const watch = document.getElementById('watch');
+        const delivery = document.getElementById('delivery');
         const note = document.getElementById('actions-note');
-        document.getElementById('actions-lede').textContent = p.rental
-            ? 'A rental listing? Keep it on your board with your notes, next to the ones from every other site.'
-            : 'Keep this page on your Rent board, or have OpenVibe.Watch tell you when it changes.';
-        (p.rental ? keep : watch).classList.add('primary');
+        document.getElementById('actions-lede').textContent = p.delivery
+            ? 'Ordering delivery? See the same restaurant on every delivery app, with each app’s own prices and fees.'
+            : p.rental
+                ? 'A rental listing? Keep it on your board with your notes, next to the ones from every other site.'
+                : 'Keep this page on your Rent board, or have OpenVibe.Watch tell you when it changes.';
+        delivery.hidden = !p.delivery;
+        (p.delivery ? delivery : p.rental ? keep : watch).classList.add('primary');
         const go = function (fn) {
             return async function () {
                 const r = await fn();
@@ -105,19 +109,57 @@
         };
         keep.addEventListener('click', go(controller.keepOnBoard));
         watch.addEventListener('click', go(controller.watchPage));
+        delivery.addEventListener('click', go(controller.compareDelivery));
         section.hidden = false;
+    }
+
+    const OUTCOME = { worked: 'lowered the total', failed: 'not accepted', unknown: 'no change seen' };
+
+    /** "Try these codes on this page": the button, what it does, and what happened to each code. */
+    function tester(coupons, connected) {
+        const list = el('ol');
+        const note = el('p', { className: 'note muted', text: 'Types each code into this page’s coupon box and presses its Apply button: never checkout or pay. It stops at the first code that lowers the total and leaves it applied.' });
+        const status = el('p', { className: 'note', 'aria-live': 'polite' });
+        const send = el('button', { type: 'button', hidden: 'hidden', text: 'Send these results to OpenVibe.Coupons' });
+        const run = el('button', { type: 'button', className: 'btn primary', text: 'Try these codes on this page' });
+        let done = [];
+        run.addEventListener('click', async function () {
+            run.disabled = true;
+            status.textContent = 'Trying codes…';
+            while (list.firstChild) list.removeChild(list.firstChild);
+            const r = await controller.tryCodes(coupons);
+            status.textContent = r.message;
+            done = r.results.filter(function (x) { return x.outcome !== 'unknown' && x.id; });
+            r.results.forEach(function (x) {
+                list.appendChild(el('li', { className: x.outcome, text: x.code + ': ' + OUTCOME[x.outcome] + (x.saved ? ' (−' + x.saved.toFixed(2) + ')' : '') }));
+            });
+            send.hidden = !(connected && done.length);
+            run.disabled = false;
+            run.textContent = 'Try again';
+        });
+        send.addEventListener('click', async function () {
+            send.disabled = true;
+            let ok = 0;
+            for (const x of done) {
+                const r = await controller.report(x.id, x.outcome === 'worked' ? 'worked' : 'failed', x.outcome === 'failed' ? 'invalid' : null);
+                if (r.ok) ok++;
+            }
+            status.textContent = ok ? 'Thanks: ' + ok + ' result' + (ok === 1 ? '' : 's') + ' sent.' : 'The results could not be sent.';
+            send.hidden = true;
+        });
+        return el('section', { className: 'try', 'aria-label': 'Try the codes on this page' }, run, note, status, list, send);
     }
 
     async function render() {
         const vm = await controller.open();
         if (vm.host) site.textContent = vm.host;
         renderActions();
-        if (vm.state === 'not_a_site') return show(el('p', { text: 'Open this on a website: a shop for its coupon codes, a rental listing for your board, any page to watch.' }));
+        if (vm.state === 'not_a_site') return show(el('p', { text: 'Open this on a website: a shop for its coupon codes, a delivery app to compare with the others, a rental listing for your board, any page to watch.' }));
         if (vm.state === 'no_merchant') return show(el('p', { className: 'muted', text: 'No coupon codes for ' + vm.host + ' on OpenVibe.Coupons. ' }, link('Submit one', '/submit')));
         if (vm.state === 'error') return show(el('p', { text: vm.message }));
         const header = el('h2', { text: 'Coupon codes for ' + vm.merchant.name });
         if (!vm.coupons.length) return show(header, el('p', { text: 'No active codes right now.' }), el('p', null, link('See the shop page', '/m/' + encodeURIComponent(vm.merchant.slug))));
-        return show(header, ...vm.coupons.map(function (c) { return couponNode(c, vm.connected); }), el('p', { className: 'muted' }, link('All codes and details', '/m/' + encodeURIComponent(vm.merchant.slug))));
+        return show(header, tester(vm.coupons, vm.connected), ...vm.coupons.map(function (c) { return couponNode(c, vm.connected); }), el('p', { className: 'muted' }, link('All codes and details', '/m/' + encodeURIComponent(vm.merchant.slug))));
     }
 
     document.getElementById('settings').addEventListener('click', function (ev) {

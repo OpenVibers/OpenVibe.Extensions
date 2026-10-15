@@ -6,6 +6,8 @@
  *   c.page()                            // { handoff, rental }: which buttons to offer
  *   await c.keepOnBoard()               // open the Rent board with this page (a new tab)
  *   await c.watchPage()                 // open a new Watch for this page (a new tab)
+ *   await c.compareDelivery()           // the restaurant on every delivery app, on openvibe.food (a new tab)
+ *   await c.tryCodes(coupons)           // type the codes into this page's coupon box (lib/autoapply.js) → a view of it
  *   await c.report(couponId, 'worked')  // → { ok, message }
  *
  * open() reads the active tab's URL and title once. Only the hostname (host.hostnameOf) is sent
@@ -45,7 +47,7 @@
         const platform = deps.platform;
         const host = deps.host;
         const handoff = deps.handoff || null;
-        let tab = { url: null, title: '' };
+        let tab = { id: null, url: null, title: '' };
 
         async function handOff(build) {
             const target = handoff && build(tab.url, tab.title);
@@ -71,14 +73,52 @@
                 }
             },
 
-            /** Which hand-offs make sense for this page: any web page can go to the board or a watch; a rental site leads with the board. */
+            /** Which hand-offs make sense for this page: any web page can go to the board or a watch; a rental site leads with the board; a delivery app offers the comparison. */
             page() {
                 const ok = Boolean(handoff && host.hostnameOf(tab.url) && handoff.boardUrl(tab.url, tab.title));
-                return { handoff: ok, rental: ok && deps.isRental ? deps.isRental(tab.url) : false };
+                return {
+                    handoff: ok,
+                    rental: ok && deps.isRental ? deps.isRental(tab.url) : false,
+                    delivery: ok && Boolean(handoff.deliveryUrl && handoff.deliveryUrl(tab.url, tab.title)),
+                };
             },
 
             keepOnBoard() { return handOff(function (u, t) { return handoff.boardUrl(u, t); }); },
             watchPage() { return handOff(function (u, t) { return handoff.watchUrl(u, t); }); },
+            compareDelivery() { return handOff(function (u, t) { return handoff.deliveryUrl(u, t); }); },
+
+            /**
+             * Try the codes in this page's own coupon box. → { ok, message, results: [{ id, code, outcome, saved }] }.
+             * Codes reported working come first; at most config.MAX_TRIES.
+             */
+            async tryCodes(coupons) {
+                const rank = { reported_working: 0, unknown: 1 };
+                const list = (coupons || []).filter(function (c) { return c && c.code && c.status !== 'reported_not_working'; })
+                    .slice().sort(function (a, b) { return (rank[a.status] == null ? 2 : rank[a.status]) - (rank[b.status] == null ? 2 : rank[b.status]); });
+                if (!list.length) return { ok: false, message: 'There are no codes to try here.', results: [] };
+                let r;
+                try {
+                    r = await platform.scripting.tryCodes(tab.id, list.map(function (c) { return { id: c.id, code: c.code }; }));
+                } catch (err) {
+                    return { ok: false, message: 'The Companion could not reach this page. Reload it and try again.', results: [] };
+                }
+                if (!r) return { ok: false, message: 'The page did not answer. Reload it and try again.', results: [] };
+                if (!r.ok) {
+                    return { ok: false, results: [], message: r.reason === 'no_apply'
+                        ? 'This page has a coupon box but no Apply button next to it, so nothing was pressed. Copy a code below instead.'
+                        : 'No coupon box on this page. Open your cart or the checkout page, then try again.' };
+                }
+                const results = r.results.map(function (x) {
+                    const saved = x.outcome === 'worked' && x.before != null && x.after != null ? Math.round((x.before - x.after) * 100) / 100 : null;
+                    return { id: x.id, code: x.code, outcome: x.outcome, saved: saved };
+                });
+                const win = results.find(function (x) { return x.outcome === 'worked'; });
+                return {
+                    ok: true, results: results,
+                    message: win ? 'Applied ' + win.code + (win.saved ? ': the total went down by ' + win.saved.toFixed(2) : '') + '. Check the total before you pay.'
+                        : 'None of the codes lowered the total on this page.',
+                };
+            },
 
             async report(couponId, outcome, reason) {
                 try {
