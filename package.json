@@ -1,6 +1,6 @@
 {
   "name": "openvibe-extensions",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "OpenVibe's first-party client surfaces (ADR-023). Today: the OpenVibe Companion, a Manifest V3 browser extension for Chromium and Firefox: coupon codes from OpenVibe.Coupons, and one click to keep a listing on the OpenVibe.Rent board or watch a page with OpenVibe.Watch.",
   "scripts": {

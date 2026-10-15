@@ -3,7 +3,8 @@
 > OpenVibe's first-party client surfaces: today, the **OpenVibe Companion** browser extension.
 
 **Status:** alpha (roadmap Wave 18, client part). The extension builds, its tests pass, and Chromium
-loads the unpacked 0.2.0 build with no console or CSP errors (2026-10-15). A development build of
+loads the unpacked 0.3.0 build with no console or CSP errors (2026-10-15, Playwright's Chromium: branded Chrome no
+longer loads unpacked extensions from the command line). A development build of
 the coupon part looked up codes and sent a report against a local OpenVibe.Coupons. It is **not
 published** to any store (install it from a release zip, below), and it hasn't been verified in
 Firefox yet. OpenVibe.Coupons runs on the production host with an empty database, and
@@ -35,6 +36,15 @@ One button in the browser for the OpenVibe sites that work with the page you are
   site this is the main button.
 - **Watch this page.** It opens a new watch on [OpenVibe.Watch](https://openvibe.watch) for the page,
   which tells you (or runs your agent) when it changes.
+- **Compare delivery apps.** On DoorDash, Uber Eats, Grubhub, Seamless, Caviar or Instacart it opens
+  [openvibe.food/delivery](https://openvibe.food/delivery) with the restaurant or store's name (read from the page
+  title, never the address or the cart), and every app's own search for it opens from there.
+- **Try these codes on this page.** At a shop's cart or checkout, one button types the codes OpenVibe.Coupons knows
+  into the page's own coupon box, presses that box's Apply button, and reads the order total before and after. It
+  stops at the first code that lowers the total and leaves it applied. Codes reported working go first, codes
+  reported not working are never tried, and at most ten are tried. It never presses checkout, pay, order, cart or
+  remove buttons, never submits a form and never presses Enter. With no Apply button next to the box it presses
+  nothing. If you connected the extension, you can send what happened to OpenVibe.Coupons in one click.
 - **Coupon codes.** On a shop's website it shows the codes
   [OpenVibe.Coupons](https://github.com/OpenVibers/OpenVibe.Coupons) knows for that shop:
 
@@ -51,9 +61,9 @@ the Companion never rewrites links or adds referral tags.
 
 | | |
 |---|---|
-| **Permissions** | `activeTab` and `storage`. The host permission is `https://openvibe.coupons/*` only. |
-| **Not requested** | `<all_urls>`, `tabs`, `cookies`, `scripting`, `webRequest`, `history`, optional permissions, content scripts, a background worker, web-accessible resources, `externally_connectable`. |
-| **Read from the page** | The active tab's **URL and title**, when you open the popup (that's what `activeTab` grants). Never the page's content. Browser pages, files, IP addresses and local names are "not a site", and nothing is sent or offered for them. |
+| **Permissions** | `activeTab`, `scripting` and `storage`. The host permission is `https://openvibe.coupons/*` only. `scripting` is used for one thing: "Try these codes on this page" injects the packaged `lib/autoapply.js` into the active tab (the access `activeTab` gives after you press the button), in its top frame and the extension's isolated world. |
+| **Not requested** | `<all_urls>`, `tabs`, `cookies`, `webRequest`, `history`, optional permissions, content scripts, a background worker, web-accessible resources, `externally_connectable`. |
+| **Read from the page** | The active tab's **URL and title**, when you open the popup (that's what `activeTab` grants). The page's content only when you press "Try these codes on this page": `lib/autoapply.js` finds the coupon box, its Apply button and the order total, types the codes in, and returns to the popup which codes changed the total. It makes no request, reads no cookies or storage, and sends nothing anywhere; `test/manifest.test.js` scans it for that. Browser pages, files, IP addresses and local names are "not a site", and nothing is sent or offered for them. |
 | **Sent by the extension** | To `https://openvibe.coupons` only, and only the **hostname** (`lib/host.js` drops the path, query, fragment, port and credentials first): `GET /api/v1/merchants/resolve?host=`, the merchant id (`GET /api/v1/merchants/:id/coupons`), and, when you report, the code id plus `worked` or `failed` with an optional reason. Every request goes with `credentials: 'omit'` (no cookies), `referrerPolicy: 'no-referrer'` and `redirect: 'error'`. |
 | **Hand-offs (only when you press the button)** | "Keep on my Rent board" and "Watch this page" open **a new tab you see** on `https://openvibe.rent/board` or `https://openvibe.watch/watches/new`, with the page's address and title in that tab's address. `lib/handoff.js` removes the credentials, the fragment and tracking parameters (`utm_*`, `fbclid`, `gclid`, …) first. The extension makes no request for it, nothing opens on its own, and nothing is saved until you save it on that site. `platform.tabs.open()` refuses any other origin, and the permission audit allows only `https://openvibe.<tld>` hand-off origins. |
 | **Stored** | Only the optional install token, in `storage.local`. It is never synced to other devices. |
@@ -89,7 +99,8 @@ browser/
   options.html / .js     connect (save a checked token), disconnect, grant the API host permission
   lib/config.js          API_ORIGIN (the one origin it sends requests to); HANDOFF_ORIGINS (Rent, Watch)
   lib/host.js            URL → hostname (everything else dropped)
-  lib/handoff.js         the Rent board and Watch addresses, built from a cleaned URL; which sites are rentals
+  lib/handoff.js         the Rent board, Watch and Food delivery addresses, built from a cleaned URL; which sites are rentals
+  lib/autoapply.js       "Try these codes on this page": injected into the active tab only when you press it
   lib/api.js             the only code that makes requests
   lib/controller.js      popup logic without the DOM (tested in Node)
   lib/platform.js        chrome.* / browser.*: tabs.query, tabs.create (hand-off pages only), storage.local, permissions
@@ -98,6 +109,7 @@ browser/
 scripts/
   audit.js               the permission audit (manifest, CSP, pages)
   pack.js                zip for loading or store review (runs the audit first)
+  check-autoapply.js     lib/autoapply.js on test/fixtures/checkout-*.html in headless Chrome (CDP, no dependencies)
   icons.js               draws the icons (no dependencies)
 ```
 

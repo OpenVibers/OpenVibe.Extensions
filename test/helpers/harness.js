@@ -71,7 +71,7 @@ function recordingFetch() {
 }
 
 /** Fakes of chrome.tabs (query, create) / chrome.storage.local / chrome.permissions; `opened` lists the tabs created. */
-function fakeExt({ url = null, title = '', token = null, hasPermission = true } = {}) {
+function fakeExt({ url = null, title = '', token = null, hasPermission = true, scriptResult = null } = {}) {
     const store = token ? { installToken: token } : {};
     const log = [];
     const opened = [];
@@ -88,6 +88,10 @@ function fakeExt({ url = null, title = '', token = null, hasPermission = true } 
             async set(o) { log.push(['storage.set', Object.keys(o)]); Object.assign(store, o); },
             async remove(k) { log.push(['storage.remove', k]); delete store[k]; },
         } },
+        // chrome.scripting.executeScript: the file injection answers [{}], the call answers scriptResult.
+        scripting: {
+            async executeScript(o) { log.push(['scripting.executeScript', o]); return o.files ? [{}] : [{ result: scriptResult }]; },
+        },
         permissions: {
             async contains(p) { log.push(['permissions.contains', p]); return hasPermission; },
             async request(p) { log.push(['permissions.request', p]); return true; },

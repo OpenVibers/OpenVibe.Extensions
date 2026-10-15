@@ -8,7 +8,7 @@
   "surfaces": {
     "browser": {
       "name": "OpenVibe Companion",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "manifest": 3,
       "targets": [
         "chromium >= 111",
@@ -24,7 +24,7 @@
       ],
       "credential": "optional cpx_ install token (coupons.lookup, coupons.report); no Network session",
       "publishedToStores": false,
-      "loadedInChrome": "yes: headless Chrome loads the packed 0.2.0 build (popup and options render, no console errors)",
+      "loadedInChrome": "yes: headless Chromium loads the 0.3.0 build (popup and options render, no console errors); lib/autoapply.js passes three fixture checkout pages in headless Chrome",
       "loadedInFirefox": "not yet verified",
       "handoffs": [
         "https://openvibe.rent/board (keep a listing)",

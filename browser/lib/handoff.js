@@ -4,6 +4,9 @@
  *
  *   boardUrl(url, title)  https://openvibe.rent/board?url=…&title=…        keep a listing on your Rent board
  *   watchUrl(url, title)  https://openvibe.watch/watches/new?template=page… watch the page for changes
+ *   deliveryUrl(url, title)  https://openvibe.food/delivery?q=…            the same restaurant on every delivery app
+ *                         (on a DoorDash, Uber Eats, Grubhub, Seamless, Caviar or Instacart page: the restaurant or
+ *                         store name read from the page title, never the address or the cart)
  *
  * This is the only code that uses more of the page than its hostname, and what it builds is a page
  * address opened in a new tab you see, never a request the extension makes. cleanUrl() drops the
@@ -25,6 +28,37 @@
         'padmapper.com', 'hotpads.com', 'trulia.com', 'realtor.com', 'roomies.com', 'furnishedfinder.com', 'airbnb.com', 'vrbo.com',
         'loopnet.com', 'spothero.com', 'sparefoot.com', 'turo.com', 'spareroom.com', 'spareroom.co.uk', 'rightmove.co.uk', 'zoopla.co.uk',
         'kijiji.ca', 'rentals.ca', 'idealista.com', 'domain.com.au', 'realestate.com.au', 'openvibe.rent'];
+
+    /** The delivery apps Food compares, and how each one's page title names the restaurant or store. */
+    const DELIVERY = [
+        { host: 'doordash.com', name: /^(?:Order\s+)?(.+?)\s+(?:Delivery|Menu|Near Me|-|\||\u2013)/i },
+        { host: 'ubereats.com', name: /^(?:Order\s+)?(.+?)\s*(?:\(|Menu|Delivery|-|\||\u2013)/i },
+        { host: 'grubhub.com', name: /^(?:Order\s+)?(.+?)\s+(?:Delivery|Menu|-|\||\u2013)/i },
+        { host: 'seamless.com', name: /^(?:Order\s+)?(.+?)\s+(?:Delivery|Menu|-|\||\u2013)/i },
+        { host: 'trycaviar.com', name: /^(?:Order\s+)?(.+?)\s+(?:Delivery|Menu|-|\||\u2013)/i },
+        { host: 'instacart.com', name: /^(?:Order\s+)?(.+?)\s+(?:Delivery|Same-Day|-|\||\u2013)/i },
+    ];
+    // A title about the app itself (its home or a search page) names no restaurant.
+    const GENERIC_TITLE = /^(doordash|uber\s*eats|grubhub|seamless|caviar|instacart)\b|^(food|restaurant|grocery)( delivery)?$|^home$|^search\b/i;
+
+    function deliveryApp(url) {
+        let u;
+        try { u = new URL(String(url)); } catch (e) { return null; }
+        const h = u.hostname.toLowerCase().replace(/^www\./, '');
+        return DELIVERY.find(function (d) { return h === d.host || h.endsWith('.' + d.host); }) || null;
+    }
+
+    function isDelivery(url) { return Boolean(deliveryApp(url)); }
+
+    /** The restaurant or store a delivery app's page is about, from its title; '' when the title names none. */
+    function deliveryQuery(url, title) {
+        const app = deliveryApp(url);
+        const t = cleanTitle(title, 200);
+        if (!app || !t) return '';
+        const m = app.name.exec(t);
+        const name = cleanTitle(m ? m[1] : t.split(/\s[|\-\u2013]\s/)[0], 80).replace(/\s+(Delivery|Menu)$/i, '');
+        return name && !GENERIC_TITLE.test(name) ? name : '';
+    }
 
     function cleanUrl(url) {
         if (typeof url !== 'string' || !url || url.length > 4000) return null;
@@ -58,10 +92,16 @@
     function createHandoff(config) {
         const RENT = config.RENT_ORIGIN;
         const WATCH = config.WATCH_ORIGIN;
+        const FOOD = config.FOOD_ORIGIN;
         const origins = config.HANDOFF_ORIGINS;
         return {
             boardUrl: function (url, title) { return boardUrl(RENT, url, title); },
             watchUrl: function (url, title) { return watchUrl(WATCH, url, title); },
+            deliveryUrl: function (url, title) {
+                if (!FOOD || !isDelivery(url)) return null;
+                const q = deliveryQuery(url, title);
+                return FOOD + '/delivery' + (q ? '?' + new URLSearchParams({ q: q }).toString() : '');
+            },
             isHandoff: function (url) { return isHandoff(origins, url); },
         };
     }
@@ -89,5 +129,5 @@
         return typeof url === 'string' && origins.some(function (o) { return url.indexOf(o + '/') === 0; });
     }
 
-    return { createHandoff, RENTAL_HOSTS, cleanUrl, isRental, isHandoff };
+    return { createHandoff, RENTAL_HOSTS, cleanUrl, isRental, isHandoff, isDelivery, deliveryQuery };
 });

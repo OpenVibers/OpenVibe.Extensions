@@ -3,7 +3,8 @@
  * The permission audit for browser/manifest.json. test/manifest.test.js runs it, and so does
  * scripts/pack.js before it writes a zip. It fails when anything widens:
  *
- *   permissions            exactly activeTab + storage
+ *   permissions            exactly activeTab + scripting + storage (scripting runs lib/autoapply.js in the active tab only,
+ *                          when the person presses "Try these codes on this page": activeTab is the only host access)
  *   host_permissions       exactly <API origin>/*
  *   forbidden keys         content_scripts, background, web_accessible_resources,
  *                          externally_connectable, optional_permissions, optional_host_permissions,
@@ -20,7 +21,7 @@ const path = require('path');
 
 const ALLOWED_KEYS = new Set(['manifest_version', 'name', 'short_name', 'version', 'description', 'homepage_url', 'author', 'icons',
     'action', 'options_ui', 'permissions', 'host_permissions', 'content_security_policy', 'minimum_chrome_version', 'browser_specific_settings']);
-const PERMISSIONS = ['activeTab', 'storage'];
+const PERMISSIONS = ['activeTab', 'scripting', 'storage'];
 
 function auditManifest(m, { apiOrigin }) {
     const problems = [];

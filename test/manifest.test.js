@@ -15,10 +15,10 @@ const ORIGIN = 'https://openvibe.coupons';
 (async () => {
     const { manifest, origin, problems } = auditDir(DIR);
 
-    await check('the shipped manifest passes the audit: activeTab + storage, one host permission (the API), MV3', async () => {
+    await check('the shipped manifest passes the audit: activeTab + scripting + storage, one host permission (the API), MV3', async () => {
         assert.deepStrictEqual(problems, []);
         assert.strictEqual(origin, ORIGIN);
-        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'storage']);
+        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'scripting', 'storage']);
         assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*']);
         for (const k of ['content_scripts', 'background', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
             assert.ok(!(k in manifest), `${k} must not be present`);
@@ -29,7 +29,8 @@ const ORIGIN = 'https://openvibe.coupons';
         const widen = [
             (m) => m.permissions.push('tabs'),
             (m) => m.permissions.push('cookies'),
-            (m) => m.permissions.push('scripting'),
+            (m) => m.permissions.push('declarativeNetRequest'),
+            (m) => { m.permissions = m.permissions.filter((p) => p !== 'scripting').concat('tabs'); },
             (m) => m.permissions.push('<all_urls>'),
             (m) => m.permissions.push('webRequest'),
             (m) => m.permissions.push('history'),
@@ -68,11 +69,11 @@ const ORIGIN = 'https://openvibe.coupons';
         assert.ok(auditPage('<button onclick="x()">', 'x').length);
     });
 
-    await check('the code never uses page access, cookies, dynamic code or HTML injection; only api.js fetches', async () => {
+    await check('the code never uses cookies, dynamic code or HTML injection; only api.js fetches; only platform.js runs a script in a page', async () => {
         const files = [];
         (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (p.endsWith('.js')) files.push(p); } })(DIR);
         const forbidden = [/\binnerHTML\b/, /\bouterHTML\b/, /insertAdjacentHTML/, /document\.write/, /\beval\s*\(/, /new Function\s*\(/, /\bcookies\b/, /document\.cookie/,
-            /executeScript/, /\.scripting\b/, /\bhistory\.(search|getVisits)/, /webRequest/, /storage\.sync/, /sendMessage|onMessageExternal|runtime\.connect/, /XMLHttpRequest/, /importScripts/];
+            /\bhistory\.(search|getVisits)/, /webRequest/, /storage\.sync/, /sendMessage|onMessageExternal|runtime\.connect/, /XMLHttpRequest/, /importScripts/];
         for (const f of files) {
             // Comments may name what the code must not do; only code is scanned.
             const src = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"])\/\/.*$/gm, '$1');
@@ -82,6 +83,17 @@ const ORIGIN = 'https://openvibe.coupons';
         }
         const tabUse = files.filter((f) => /\btabs\.(query|create|update)\b/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
         assert.deepStrictEqual(tabUse, [path.join('lib', 'platform.js')], 'only the platform wrapper touches tabs (it opens only hand-off pages)');
+        // The page is touched only by "Try these codes on this page": platform.js injects the one packaged file and calls it.
+        const injects = files.filter((f) => /executeScript|ext\.scripting/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
+        assert.deepStrictEqual(injects, [path.join('lib', 'platform.js')], 'only the platform wrapper runs a script in a page');
+        const plat = fs.readFileSync(path.join(DIR, 'lib', 'platform.js'), 'utf8');
+        assert.deepStrictEqual([...plat.matchAll(/files:\s*\[([^\]]*)\]/g)].map((m) => m[1].trim()), ["'lib/autoapply.js'"], 'the one file it injects');
+        assert.doesNotMatch(plat, /allFrames|world:\s*['"]MAIN|tabId:(?!\s*tabId\b)/, 'the active tab only, its top frame, the isolated world');
+        // What runs in the shop's page makes no request and reads no stored data.
+        const auto = fs.readFileSync(path.join(DIR, 'lib', 'autoapply.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+        for (const re of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /sendBeacon/, /localStorage|sessionStorage|indexedDB/, /document\.cookie/, /\.submit\s*\(|requestSubmit/, /KeyboardEvent|keydown|keypress/, /chrome\.|browser\./]) {
+            assert.doesNotMatch(auto, re, `lib/autoapply.js uses ${re}`);
+        }
     });
 
     done();
