@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>OpenVibe Coupons Helper — settings</title>
+<title>OpenVibe Companion — settings</title>
 <link rel="stylesheet" href="popup.css">
 </head>
 <body class="options">
 <main>
-  <h1>OpenVibe Coupons Helper</h1>
-  <p>The helper works without connecting. Connecting lets it report whether a code worked, as you.</p>
+  <h1>OpenVibe Companion</h1>
+  <p>Coupon codes, the Rent board and Watch all work without connecting. Connecting lets the Companion report whether a code worked, as you.</p>
   <ol>
     <li>On <a id="connect-link" target="_blank" rel="noopener noreferrer" href="#">openvibe.coupons/connect-extension</a>, sign in and create a token for this browser.</li>
     <li>Paste it here. It can only look up codes and report on them; it is not your OpenVibe sign-in.</li>
@@ -20,12 +20,13 @@
   </form>
   <p id="state" class="muted" aria-live="polite"></p>
   <p><button id="disconnect" type="button">Disconnect</button> <span class="muted">Removes the token from this browser. Revoke it on openvibe.coupons as well.</span></p>
-  <p id="permission-row" hidden><button id="grant" type="button">Allow access to openvibe.coupons</button> <span class="muted">Needed to report; the helper never asks for access to other sites.</span></p>
+  <p id="permission-row" hidden><button id="grant" type="button">Allow access to openvibe.coupons</button> <span class="muted">Needed to report; the Companion never asks for access to other sites.</span></p>
   <h2>What this extension can see</h2>
   <ul>
-    <li>Only the hostname of the tab you are on, and only when you open the helper.</li>
-    <li>No page content, no full addresses, no cookies, no browsing history.</li>
-    <li>It talks to openvibe.coupons only.</li>
+    <li>The tab you are on, and only when you open the Companion: its address and title.</li>
+    <li>It sends openvibe.coupons only the hostname, to find that shop’s codes.</li>
+    <li>When you press “Keep on my Rent board” or “Watch this page”, it opens openvibe.rent or openvibe.watch in a new tab with the page’s address and title, without its tracking parameters. You see that tab, and nothing is saved until you save it there.</li>
+    <li>No page content, no cookies, no browsing history, nothing in the background.</li>
   </ul>
 </main>
 <script src="lib/config.js"></script>

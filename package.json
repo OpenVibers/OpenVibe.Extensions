@@ -1,15 +1,22 @@
 {
   "name": "openvibe-extensions",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "OpenVibe's first-party client surfaces (ADR-023). Today: the OpenVibe Coupons Helper, a Manifest V3 browser extension for Chromium and Firefox built on OpenVibe.Coupons' public API.",
+  "description": "OpenVibe's first-party client surfaces (ADR-023). Today: the OpenVibe Companion, a Manifest V3 browser extension for Chromium and Firefox: coupon codes from OpenVibe.Coupons, and one click to keep a listing on the OpenVibe.Rent board or watch a page with OpenVibe.Watch.",
   "scripts": {
     "test": "node test/run.js",
     "pack": "node scripts/pack.js",
     "pack:dev": "node scripts/pack.js --api http://localhost:4850",
     "icons": "node scripts/icons.js"
   },
-  "keywords": ["openvibe", "browser-extension", "webextension", "coupons"],
+  "keywords": [
+    "openvibe",
+    "browser-extension",
+    "webextension",
+    "coupons",
+    "rent",
+    "watch"
+  ],
   "author": "OpenVibers",
   "license": "MIT",
   "repository": "github:OpenVibers/OpenVibe.Extensions",

@@ -7,17 +7,29 @@
   "adr": "OpenVibe.Contracts ADR-023 (first-party client surfaces)",
   "surfaces": {
     "browser": {
-      "name": "OpenVibe Coupons Helper",
-      "version": "0.1.0",
+      "name": "OpenVibe Companion",
+      "version": "0.2.0",
       "manifest": 3,
-      "targets": ["chromium >= 111", "firefox >= 128"],
+      "targets": [
+        "chromium >= 111",
+        "firefox >= 128"
+      ],
       "api": "https://openvibe.coupons (OpenVibe.Coupons public API)",
-      "permissions": ["activeTab", "storage"],
-      "hostPermissions": ["https://openvibe.coupons/*"],
+      "permissions": [
+        "activeTab",
+        "storage"
+      ],
+      "hostPermissions": [
+        "https://openvibe.coupons/*"
+      ],
       "credential": "optional cpx_ install token (coupons.lookup, coupons.report); no Network session",
       "publishedToStores": false,
-      "loadedInChrome": "yes: headless Chrome 150 loads the packed build; a development build looked up and reported against a local OpenVibe.Coupons",
-      "loadedInFirefox": "not yet verified"
+      "loadedInChrome": "yes: headless Chrome loads the packed 0.2.0 build (popup and options render, no console errors)",
+      "loadedInFirefox": "not yet verified",
+      "handoffs": [
+        "https://openvibe.rent/board (keep a listing)",
+        "https://openvibe.watch/watches/new (watch a page)"
+      ]
     }
   },
   "pending": [

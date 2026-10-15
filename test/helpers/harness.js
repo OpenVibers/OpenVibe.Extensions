@@ -70,14 +70,19 @@ function recordingFetch() {
     return f;
 }
 
-/** Fakes of chrome.tabs / chrome.storage.local / chrome.permissions. */
-function fakeExt({ url = null, token = null, hasPermission = true } = {}) {
+/** Fakes of chrome.tabs (query, create) / chrome.storage.local / chrome.permissions; `opened` lists the tabs created. */
+function fakeExt({ url = null, title = '', token = null, hasPermission = true } = {}) {
     const store = token ? { installToken: token } : {};
     const log = [];
+    const opened = [];
     return {
         log,
         store,
-        tabs: { async query(q) { log.push(['tabs.query', q]); return url === undefined ? [] : [{ id: 1, url }]; } },
+        opened,
+        tabs: {
+            async query(q) { log.push(['tabs.query', q]); return url === undefined ? [] : [{ id: 1, url, title }]; },
+            async create(o) { log.push(['tabs.create', o]); opened.push(o.url); return { id: 2, url: o.url }; },
+        },
         storage: { local: {
             async get(k) { log.push(['storage.get', k]); return { [k]: store[k] }; },
             async set(o) { log.push(['storage.set', Object.keys(o)]); Object.assign(store, o); },

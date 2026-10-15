@@ -1,11 +1,12 @@
 # OpenVibe.Extensions
 
-> OpenVibe's first-party client surfaces: today, the **OpenVibe Coupons Helper** browser extension.
+> OpenVibe's first-party client surfaces: today, the **OpenVibe Companion** browser extension.
 
-**Status:** alpha (roadmap Wave 18, client part). The extension builds, its tests pass, and headless
-Chrome 150 loads the packed build. A development build of it looked up codes and sent a report
-against a local OpenVibe.Coupons. It is **not published** to any store, and it hasn't been verified
-in Firefox yet. OpenVibe.Coupons runs on the production host with an empty database, and
+**Status:** alpha (roadmap Wave 18, client part). The extension builds, its tests pass, and Chromium
+loads the unpacked 0.2.0 build with no console or CSP errors (2026-10-15). A development build of
+the coupon part looked up codes and sent a report against a local OpenVibe.Coupons. It is **not
+published** to any store (install it from a release zip, below), and it hasn't been verified in
+Firefox yet. OpenVibe.Coupons runs on the production host with an empty database, and
 `https://openvibe.coupons` is public since 2026-10-09, so the release build talks to the live
 Coupons API.
 **Decision record:** [ADR-023](https://github.com/OpenVibers/OpenVibe.Contracts/blob/main/docs/adr/ADR-023-client-surfaces.md) (first-party client surfaces and their home). Roadmap §4.2 D.
@@ -18,15 +19,24 @@ per-install permissions. ADR-023 gives clients their own repository.
 
 | Surface | Directory | State |
 |---|---|---|
-| OpenVibe Coupons Helper (Chromium and Firefox, Manifest V3) | `browser/` | alpha, described below |
+| OpenVibe Companion (Chromium and Firefox, Manifest V3) | `browser/` | alpha, described below (it was the OpenVibe Coupons Helper until 0.2.0) |
 | Kiosk companion (Firefox, new-tab and history bridge for the /kiosk page) | `kiosk-companion/` | Moved from OpenVibe.Live `browser-extension/openvibe-kiosk-companion/` (ADR-023, Live 9c5aa64); Live keeps a redirect README |
 | Hardware / Raspberry Pi companions (streamer and controller scripts) | `hardware/` | Moved from OpenVibe.Live `hardware/` (ADR-023, Live 9c5aa64); Live keeps a redirect README |
 | Desktop client | — | Planned by ADR-023 for the long term. Nothing exists. |
 
-## The OpenVibe Coupons Helper (`browser/`)
+## The OpenVibe Companion (`browser/`)
 
-Open it on a shop's website and it shows the codes
-[OpenVibe.Coupons](https://github.com/OpenVibers/OpenVibe.Coupons) knows for that shop:
+One button in the browser for the OpenVibe sites that work with the page you are on:
+
+- **Keep on my Rent board.** On a rental listing (Craigslist, Facebook Marketplace, Zillow,
+  Apartments.com, Zumper, Airbnb and the rest) or any page, it opens
+  [openvibe.rent/board](https://openvibe.rent/board) with the listing's address and title filled in,
+  so every listing from every site sits in one list with your notes and how far you got. On a rental
+  site this is the main button.
+- **Watch this page.** It opens a new watch on [OpenVibe.Watch](https://openvibe.watch) for the page,
+  which tells you (or runs your agent) when it changes.
+- **Coupon codes.** On a shop's website it shows the codes
+  [OpenVibe.Coupons](https://github.com/OpenVibers/OpenVibe.Coupons) knows for that shop:
 
 - the code, with a Copy button
 - its status (validity unknown, reported working, reported not working)
@@ -34,7 +44,8 @@ Open it on a shop's website and it shows the codes
 - its restrictions, or "No restrictions stated"
 - how to apply it
 
-If you connected the extension, you can report whether a code worked.
+If you connected the extension, you can report whether a code worked. The codes are shown to copy;
+the Companion never rewrites links or adds referral tags.
 
 ### What it can see, and what it sends
 
@@ -42,8 +53,9 @@ If you connected the extension, you can report whether a code worked.
 |---|---|
 | **Permissions** | `activeTab` and `storage`. The host permission is `https://openvibe.coupons/*` only. |
 | **Not requested** | `<all_urls>`, `tabs`, `cookies`, `scripting`, `webRequest`, `history`, optional permissions, content scripts, a background worker, web-accessible resources, `externally_connectable`. |
-| **Read from the page** | The **hostname** of the active tab's URL, when you open the popup (that's what `activeTab` grants). `lib/host.js` drops the path, query, fragment, port and credentials before anything else sees the URL. Browser pages, files, IP addresses and local names are "not a shop", and nothing is sent for them. |
-| **Sent** | To `https://openvibe.coupons` only: the hostname (`GET /api/v1/merchants/resolve?host=`), the merchant id (`GET /api/v1/merchants/:id/coupons`), and, when you report, the code id plus `worked` or `failed` with an optional reason. Every request goes with `credentials: 'omit'` (no cookies), `referrerPolicy: 'no-referrer'` and `redirect: 'error'`. |
+| **Read from the page** | The active tab's **URL and title**, when you open the popup (that's what `activeTab` grants). Never the page's content. Browser pages, files, IP addresses and local names are "not a site", and nothing is sent or offered for them. |
+| **Sent by the extension** | To `https://openvibe.coupons` only, and only the **hostname** (`lib/host.js` drops the path, query, fragment, port and credentials first): `GET /api/v1/merchants/resolve?host=`, the merchant id (`GET /api/v1/merchants/:id/coupons`), and, when you report, the code id plus `worked` or `failed` with an optional reason. Every request goes with `credentials: 'omit'` (no cookies), `referrerPolicy: 'no-referrer'` and `redirect: 'error'`. |
+| **Hand-offs (only when you press the button)** | "Keep on my Rent board" and "Watch this page" open **a new tab you see** on `https://openvibe.rent/board` or `https://openvibe.watch/watches/new`, with the page's address and title in that tab's address. `lib/handoff.js` removes the credentials, the fragment and tracking parameters (`utm_*`, `fbclid`, `gclid`, …) first. The extension makes no request for it, nothing opens on its own, and nothing is saved until you save it on that site. `platform.tabs.open()` refuses any other origin, and the permission audit allows only `https://openvibe.<tld>` hand-off origins. |
 | **Stored** | Only the optional install token, in `storage.local`. It is never synced to other devices. |
 | **CSP** | `default-src 'none'; script-src 'self'; connect-src https://openvibe.coupons; object-src 'none'`. There is no inline script, no remote code, no `eval`, and no `innerHTML`: the popup builds DOM nodes and sets text. |
 
@@ -75,11 +87,12 @@ browser/
   manifest.json          MV3; Chromium (minimum_chrome_version 111) and Firefox (gecko id, strict_min_version 128)
   popup.html / popup.js  DOM wiring only
   options.html / .js     connect (save a checked token), disconnect, grant the API host permission
-  lib/config.js          API_ORIGIN — the one origin the extension talks to
+  lib/config.js          API_ORIGIN (the one origin it sends requests to); HANDOFF_ORIGINS (Rent, Watch)
   lib/host.js            URL → hostname (everything else dropped)
+  lib/handoff.js         the Rent board and Watch addresses, built from a cleaned URL; which sites are rentals
   lib/api.js             the only code that makes requests
   lib/controller.js      popup logic without the DOM (tested in Node)
-  lib/platform.js        chrome.* / browser.*: tabs.query, storage.local, permissions
+  lib/platform.js        chrome.* / browser.*: tabs.query, tabs.create (hand-off pages only), storage.local, permissions
   lib/format.js          wording ("Expiry unknown", "No restrictions stated", …)
   icons/                 generated by scripts/icons.js
 scripts/
@@ -99,6 +112,7 @@ npm test
 | The manifest permission audit fails if anything widens: extra permissions, `<all_urls>` or broader hosts, content scripts, a background worker, web-accessible resources, `externally_connectable`, optional permissions, `unsafe-eval`, remote script or connect sources, MV2. The API origin agrees across config, host permission and CSP. Pages have no inline or remote script. The code never uses cookies, scripting, dynamic code, HTML injection or `storage.sync`, and only `lib/api.js` fetches. | `test/manifest.test.js` |
 | API client against a stub: routes; no `Authorization` without a token; never cookies, referrers or redirects; errors as codes (revoked, scope, 429, 503); timeouts; refused input. | `test/api-client.test.js` |
 | The extension never sends page content or URLs beyond the hostname. The popup controller runs on checkout URLs full of personal data, and every request the stub receives is inspected. Non-shop pages send nothing. Only `tabs.query` and `storage.local` are touched. Only `cpx_` tokens are stored. | `test/privacy.test.js` |
+| The hand-offs: nothing opens when the popup opens; a button opens one tab on openvibe.rent or openvibe.watch with the cleaned address (no credentials, fragment or tracking parameters); the Coupons API still gets the hostname only; `tabs.open` refuses other origins; rental sites lead with the board. | `test/handoff.test.js` |
 | `scripts/pack.js`: the zip is exactly `browser/`, audited and reproducible. A development build rewrites the origin in all three places. Remote `http` origins are refused. | `test/pack.test.js` |
 
 Beyond the automated tests, this was checked by hand on 2026-09-22:
@@ -114,10 +128,11 @@ That check is not in CI. Firefox hasn't been tried.
 ## Packing (never published from here)
 
 ```bash
-npm run pack                        # dist/openvibe-coupons-helper-<version>.zip  (API https://openvibe.coupons)
+npm run pack                        # dist/openvibe-companion-<version>.zip  (API https://openvibe.coupons)
 node scripts/pack.js --api http://localhost:4850   # dist/…-dev.zip for a local Coupons (localhost/127.0.0.1 or https only)
 ```
 
+Each version's zip is attached to its [GitHub release](https://github.com/OpenVibers/OpenVibe.Extensions/releases/latest).
 To load it:
 
 - **Chromium:** `chrome://extensions`, turn on Developer mode, choose "Load unpacked" and pick the
@@ -134,7 +149,7 @@ shows "Allow access to openvibe.coupons".
    2026-10-09). The release build only talks to `https://openvibe.coupons`.
 2. **Store listings:** submit the zip to the Chrome Web Store and addons.mozilla.org. The privacy
    disclosure is the table above: the hostname of the active tab, only on open, sent to
-   openvibe.coupons. `browser_specific_settings.gecko.data_collection_permissions` declares
+   openvibe.coupons; the address and title only in a hand-off tab the person opens. `browser_specific_settings.gecko.data_collection_permissions` declares
    `browsingActivity`. Check it against AMO's requirements at submission time.
 3. **CORS (optional):** set `COUPONS_EXTENSION_ORIGINS` on Coupons to the Chrome Web Store id
    (`chrome-extension://<id>`) and, if wanted, `moz-extension://*`. The extension doesn't need it,
@@ -145,6 +160,9 @@ shows "Allow access to openvibe.coupons".
 
 ## Depends on
 
+- [OpenVibe.Rent](https://github.com/OpenVibers/OpenVibe.Rent) `/board?url=&title=` and
+  [OpenVibe.Watch](https://github.com/OpenVibers/OpenVibe.Watch) `/watches/new?template=page&url=&name=`
+  (pages, not APIs: the person signs in there as usual).
 - [OpenVibe.Coupons](https://github.com/OpenVibers/OpenVibe.Coupons) public API:
   - `GET /api/v1/merchants/resolve?host=`
   - `GET /api/v1/merchants/:id/coupons`

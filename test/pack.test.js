@@ -40,7 +40,7 @@ function unzip(buf) {
 
     await check('the release zip holds exactly browser/, byte for byte, and its manifest passes the audit', async () => {
         const r = build({ outDir: tmp });
-        assert.match(path.basename(r.out), /^openvibe-coupons-helper-\d+\.\d+\.\d+\.zip$/);
+        assert.match(path.basename(r.out), /^openvibe-companion-\d+\.\d+\.\d+\.zip$/);
         const files = unzip(fs.readFileSync(r.out));
         const src = path.join(__dirname, '..', 'browser');
         for (const [name, data] of files) assert.ok(data.equals(fs.readFileSync(path.join(src, name))), name);
