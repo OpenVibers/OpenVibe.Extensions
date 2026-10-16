@@ -42,6 +42,10 @@ const CLEAN = 'https://saltlakecity.craigslist.org/apa/d/sunny-2br/7790000001.ht
         assert.strictEqual(w.origin + w.pathname, 'https://openvibe.watch/watches/new');
         assert.deepStrictEqual([w.searchParams.get('template'), w.searchParams.get('url'), w.searchParams.get('name').length], ['page', CLEAN, 80]);
         assert.strictEqual(handoff.boardUrl('chrome://extensions', 'x'), null);
+        const f = new URL(handoff.fairUrl(LISTING, '$1,850 / 2br - Sunny'));
+        assert.strictEqual(f.origin + f.pathname, 'https://openvibe.rent/fair', 'is this rent fair?');
+        assert.deepStrictEqual(Object.fromEntries(f.searchParams), { url: CLEAN, title: '$1,850 / 2br - Sunny' });
+        assert.strictEqual(handoff.fairUrl('file:///x.html', 'x'), null);
     });
 
     await check('rental sites lead with the board: the listing sites and Facebook Marketplace, not the rest of Facebook', () => {
@@ -65,6 +69,9 @@ const CLEAN = 'https://saltlakecity.craigslist.org/apa/d/sunny-2br/7790000001.ht
         assert.ok(!/hunter2|utm_|fbclid|#photos/.test(p.ext.opened[0]), 'nothing private or tracking goes along');
         await p.controller.watchPage();
         assert.ok(p.ext.opened[1].startsWith('https://openvibe.watch/watches/new?template=page&url='));
+        assert.deepStrictEqual(await p.controller.checkRent(), { ok: true });
+        assert.ok(p.ext.opened[2].startsWith('https://openvibe.rent/fair?url='), 'check the rent opens Rent\'s fair check');
+        assert.ok(!/hunter2|utm_|fbclid|#photos/.test(p.ext.opened[2]));
         assert.strictEqual(stub.requests.length, 1, 'a hand-off is a tab you see, never a request the extension makes');
     });
 

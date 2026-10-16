@@ -3,6 +3,8 @@
  * press a button for it — never on its own.
  *
  *   boardUrl(url, title)  https://openvibe.rent/board?url=…&title=…        keep a listing on your Rent board
+ *   fairUrl(url, title)   https://openvibe.rent/fair?url=…&title=…         is this rent fair? (Rent reads the rent, size
+ *                         and city from the address and title, says what it read, and compares with the city's median)
  *   watchUrl(url, title)  https://openvibe.watch/watches/new?template=page… watch the page for changes
  *   deliveryUrl(url, title)  https://openvibe.food/delivery?q=…            the same restaurant on every delivery app
  *                         (on a DoorDash, Uber Eats, Grubhub, Seamless, Caviar or Instacart page: the restaurant or
@@ -96,6 +98,7 @@
         const origins = config.HANDOFF_ORIGINS;
         return {
             boardUrl: function (url, title) { return boardUrl(RENT, url, title); },
+            fairUrl: function (url, title) { return fairUrl(RENT, url, title); },
             watchUrl: function (url, title) { return watchUrl(WATCH, url, title); },
             deliveryUrl: function (url, title) {
                 if (!FOOD || !isDelivery(url)) return null;
@@ -113,6 +116,15 @@
         const t = cleanTitle(title, 200);
         if (t) q.set('title', t);
         return RENT + '/board?' + q.toString();
+    }
+
+    function fairUrl(RENT, url, title) {
+        const page = cleanUrl(url);
+        if (!page) return null;
+        const q = new URLSearchParams({ url: page });
+        const t = cleanTitle(title, 200);
+        if (t) q.set('title', t);
+        return RENT + '/fair?' + q.toString();
     }
 
     function watchUrl(WATCH, url, title) {
