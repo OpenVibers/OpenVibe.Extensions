@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "OpenVibe Companion",
   "short_name": "OpenVibe",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Coupon codes for the shop you are on, tried in its coupon box when you ask; the same restaurant on every delivery app; and one click to keep a rental listing on your OpenVibe.Rent board or watch a page. Reads the tab only when you open it.",
   "homepage_url": "https://github.com/OpenVibers/OpenVibe.Extensions",
   "author": "OpenVibers",

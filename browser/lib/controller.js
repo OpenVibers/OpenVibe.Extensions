@@ -5,6 +5,7 @@
  *   const vm = await c.open();          // the codes for the active tab's shop
  *   c.page()                            // { handoff, rental }: which buttons to offer
  *   await c.keepOnBoard()               // open the Rent board with this page (a new tab)
+ *   await c.checkRent()                 // is this rent fair? on openvibe.rent/fair (a new tab)
  *   await c.watchPage()                 // open a new Watch for this page (a new tab)
  *   await c.compareDelivery()           // the restaurant on every delivery app, on openvibe.food (a new tab)
  *   await c.tryCodes(coupons)           // type the codes into this page's coupon box (lib/autoapply.js) → a view of it
@@ -84,6 +85,7 @@
             },
 
             keepOnBoard() { return handOff(function (u, t) { return handoff.boardUrl(u, t); }); },
+            checkRent() { return handOff(function (u, t) { return handoff.fairUrl(u, t); }); },
             watchPage() { return handOff(function (u, t) { return handoff.watchUrl(u, t); }); },
             compareDelivery() { return handOff(function (u, t) { return handoff.deliveryUrl(u, t); }); },
 

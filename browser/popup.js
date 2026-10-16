@@ -96,9 +96,12 @@
         document.getElementById('actions-lede').textContent = p.delivery
             ? 'Ordering delivery? See the same restaurant on every delivery app, with each app’s own prices and fees.'
             : p.rental
-                ? 'A rental listing? Keep it on your board with your notes, next to the ones from every other site.'
+                ? 'A rental listing? Keep it on your board with your notes, or check its rent against what the city usually costs.'
                 : 'Keep this page on your Rent board, or have OpenVibe.Watch tell you when it changes.';
         delivery.hidden = !p.delivery;
+        // On a rental listing: is its rent fair for the city? (openvibe.rent/fair reads the rent, size and city.)
+        const fair = document.getElementById('fair');
+        fair.hidden = !p.rental;
         (p.delivery ? delivery : p.rental ? keep : watch).classList.add('primary');
         const go = function (fn) {
             return async function () {
@@ -108,6 +111,7 @@
             };
         };
         keep.addEventListener('click', go(controller.keepOnBoard));
+        fair.addEventListener('click', go(controller.checkRent));
         watch.addEventListener('click', go(controller.watchPage));
         delivery.addEventListener('click', go(controller.compareDelivery));
         section.hidden = false;
