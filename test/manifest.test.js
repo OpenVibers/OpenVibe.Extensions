@@ -83,17 +83,22 @@ const ORIGIN = 'https://openvibe.coupons';
         }
         const tabUse = files.filter((f) => /\btabs\.(query|create|update)\b/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
         assert.deepStrictEqual(tabUse, [path.join('lib', 'platform.js')], 'only the platform wrapper touches tabs (it opens only hand-off pages)');
-        // The page is touched only by "Try these codes on this page": platform.js injects the one packaged file and calls it.
+        // The page is touched only by "Try these codes on this page" and "Save its rating to OpenVibe Reviews": platform.js
+        // injects the packaged file for that button and calls it.
         const injects = files.filter((f) => /executeScript|ext\.scripting/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
         assert.deepStrictEqual(injects, [path.join('lib', 'platform.js')], 'only the platform wrapper runs a script in a page');
         const plat = fs.readFileSync(path.join(DIR, 'lib', 'platform.js'), 'utf8');
-        assert.deepStrictEqual([...plat.matchAll(/files:\s*\[([^\]]*)\]/g)].map((m) => m[1].trim()), ["'lib/autoapply.js'"], 'the one file it injects');
+        assert.deepStrictEqual([...plat.matchAll(/files:\s*\[([^\]]*)\]/g)].map((m) => m[1].trim()), ["'lib/autoapply.js'", "'lib/rating.js'"], 'the two files it injects');
         assert.doesNotMatch(plat, /allFrames|world:\s*['"]MAIN|tabId:(?!\s*tabId\b)/, 'the active tab only, its top frame, the isolated world');
-        // What runs in the shop's page makes no request and reads no stored data.
-        const auto = fs.readFileSync(path.join(DIR, 'lib', 'autoapply.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-        for (const re of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /sendBeacon/, /localStorage|sessionStorage|indexedDB/, /document\.cookie/, /\.submit\s*\(|requestSubmit/, /KeyboardEvent|keydown|keypress/, /chrome\.|browser\./]) {
-            assert.doesNotMatch(auto, re, `lib/autoapply.js uses ${re}`);
+        // What runs in the page makes no request and reads no stored data.
+        for (const file of ['autoapply.js', 'rating.js']) {
+            const src = fs.readFileSync(path.join(DIR, 'lib', file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+            for (const re of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /sendBeacon/, /localStorage|sessionStorage|indexedDB/, /document\.cookie/, /\.submit\s*\(|requestSubmit/, /KeyboardEvent|keydown|keypress/, /chrome\.|browser\./]) {
+                assert.doesNotMatch(src, re, `lib/${file} uses ${re}`);
+            }
         }
+        // Reading a rating presses nothing and types nothing.
+        assert.doesNotMatch(fs.readFileSync(path.join(DIR, 'lib', 'rating.js'), 'utf8'), /\.click\s*\(|dispatchEvent|\.value\s*=|\.focus\s*\(/, 'lib/rating.js only reads');
     });
 
     done();

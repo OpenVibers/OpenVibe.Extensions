@@ -8,7 +8,7 @@
   "surfaces": {
     "browser": {
       "name": "OpenVibe Companion",
-      "version": "0.3.0",
+      "version": "0.5.0",
       "manifest": 3,
       "targets": [
         "chromium >= 111",
@@ -17,6 +17,7 @@
       "api": "https://openvibe.coupons (OpenVibe.Coupons public API)",
       "permissions": [
         "activeTab",
+        "scripting",
         "storage"
       ],
       "hostPermissions": [
@@ -28,7 +29,10 @@
       "loadedInFirefox": "not yet verified",
       "handoffs": [
         "https://openvibe.rent/board (keep a listing)",
-        "https://openvibe.watch/watches/new (watch a page)"
+        "https://openvibe.rent/fair (check the rent)",
+        "https://openvibe.watch/watches/new (watch a page)",
+        "https://openvibe.food/delivery (compare delivery apps)",
+        "https://openvibe.reviews/save (a review site's rating, checked and saved on Reviews)"
       ]
     }
   },

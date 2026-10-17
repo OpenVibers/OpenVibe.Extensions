@@ -6,7 +6,8 @@
  * a development build (--api http://localhost:4850) and test/manifest.test.js checks they agree.
  *
  * HANDOFF_ORIGINS are the sites the Companion may open a tab on when you press one of its buttons
- * (lib/handoff.js): the Rent board, a new Watch, and Food's delivery comparison. It sends them nothing
+ * (lib/handoff.js): the Rent board, a new Watch, Food's delivery comparison, and Reviews' page for saving the rating
+ * a review site shows. It sends them nothing
  * itself; the address of the tab it opens carries the page you were on, and you see it.
  *
  * MAX_TRIES is how many codes "Try these codes on this page" types into a shop's coupon box at most
@@ -23,7 +24,8 @@
         RENT_ORIGIN: 'https://openvibe.rent',
         WATCH_ORIGIN: 'https://openvibe.watch',
         FOOD_ORIGIN: 'https://openvibe.food',
-        HANDOFF_ORIGINS: Object.freeze(['https://openvibe.rent', 'https://openvibe.watch', 'https://openvibe.food']),
+        REVIEWS_ORIGIN: 'https://openvibe.reviews',
+        HANDOFF_ORIGINS: Object.freeze(['https://openvibe.rent', 'https://openvibe.watch', 'https://openvibe.food', 'https://openvibe.reviews']),
         MAX_TRIES: 10,
         CONNECT_PATH: '/connect-extension',
         TOKEN_KEY: 'installToken',

@@ -13,6 +13,8 @@
  *   scripting.tryCodes(tabId, codes)       when the person presses "Try these codes on this page": inject
  *                           lib/autoapply.js into that tab (activeTab grants it for this one tab, after
  *                           that click) and run it with the codes; returns what it saw
+ *   scripting.readRating(tabId)            when the person presses "Save its rating to OpenVibe Reviews" on a review
+ *                           site: inject lib/rating.js the same way and return the rating the page states
  *
  * Nothing else: no cookies, no history, and the page is touched only by that one button.
  */
@@ -52,6 +54,12 @@
                         func: function (c) { return self.OVAutoApply.run(c); },
                         args: [list],
                     }]);
+                    return out && out[0] ? out[0].result : null;
+                },
+                async readRating(tabId) {
+                    if (!ext.scripting || !Number.isInteger(tabId)) throw new TypeError('this browser cannot read the page');
+                    await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, files: ['lib/rating.js'] }]);
+                    const out = await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, func: function () { return self.OVRating.read(document); } }]);
                     return out && out[0] ? out[0].result : null;
                 },
             },

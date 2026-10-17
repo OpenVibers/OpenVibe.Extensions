@@ -9,6 +9,9 @@
  *   deliveryUrl(url, title)  https://openvibe.food/delivery?q=…            the same restaurant on every delivery app
  *                         (on a DoorDash, Uber Eats, Grubhub, Seamless, Caviar or Instacart page: the restaurant or
  *                         store name read from the page title, never the address or the cart)
+ *   reviewUrl(url, title, rating)  https://openvibe.reviews/save?site=…&url=…&name=…&rating=…  the rating a review
+ *                         site's page shows (Glassdoor, Indeed, Yelp, the BBB, Trustpilot, Google Maps, Tripadvisor;
+ *                         read by lib/rating.js when the person presses the button), for them to check and save there
  *
  * This is the only code that uses more of the page than its hostname, and what it builds is a page
  * address opened in a new tab you see, never a request the extension makes. cleanUrl() drops the
@@ -51,6 +54,50 @@
     }
 
     function isDelivery(url) { return Boolean(deliveryApp(url)); }
+
+    /** Review sites whose pages state a rating OpenVibe.Reviews shows beside their link (its SEEN_SITES). */
+    const REVIEW_SITES = [
+        { site: 'glassdoor', host: /(^|\.)glassdoor\.[a-z.]{2,12}$/, kind: 'employer' },
+        { site: 'indeed', host: /(^|\.)indeed\.[a-z.]{2,12}$/, kind: 'employer', path: /^\/cmp\// },
+        { site: 'yelp', host: /(^|\.)yelp\.[a-z.]{2,12}$/, path: /^\/biz\// },
+        { site: 'bbb', host: /(^|\.)bbb\.org$/, kind: 'business' },
+        { site: 'trustpilot', host: /(^|\.)trustpilot\.com$/, path: /^\/review\// },
+        { site: 'google', host: /(^|\.)google\.[a-z.]{2,12}$/, path: /^\/maps\b/ },
+        { site: 'tripadvisor', host: /(^|\.)tripadvisor\.[a-z.]{2,12}$/ },
+    ];
+    const TYPE_KIND = [[/restaurant|food|cafe|bakery|bar(?:Or)?|pub|winery|brewery/i, 'restaurant'], [/hotel|lodging|attraction|landmark|park|museum/i, 'place'],
+        [/localbusiness|store|shop|dentist|medical|automotive|homeandconstruction|legal|financial/i, 'business'], [/softwareapplication|mobileapplication|webapplication/i, 'app'],
+        [/organization|corporation/i, 'organization']];
+
+    /** Which review site a page is on, or null (Google only on its Maps pages). */
+    function reviewSite(url) {
+        let u;
+        try { u = new URL(String(url)); } catch (e) { return null; }
+        if (u.protocol !== 'https:') return null;
+        const h = u.hostname.toLowerCase();
+        const r = REVIEW_SITES.find(function (x) { return x.host.test(h) && (!x.path || x.path.test(u.pathname) || (x.site === 'google' && /^maps\./.test(h))); });
+        return r || null;
+    }
+
+    function reviewUrl(REVIEWS, url, title, rating) {
+        const r = reviewSite(url);
+        const page = r && cleanUrl(url);
+        if (!page) return null;
+        const got = rating || {};
+        const q = new URLSearchParams({ site: r.site, url: page });
+        const name = cleanTitle(got.name, 200) || cleanTitle(String(title || '').split(/\s+[|\-\u2013\u2014]\s+/)[0], 200);
+        if (name) q.set('name', name);
+        const kind = r.kind || (TYPE_KIND.find(function (k) { return k[0].test(String(got.type || '')); }) || [])[1];
+        if (kind) q.set('kind', kind);
+        if (got.place) q.set('place', cleanTitle(got.place, 120));
+        if (typeof got.value === 'number' && Number.isFinite(got.value)) {
+            q.set('rating', String(got.value));
+            q.set('best', String(typeof got.best === 'number' && got.best > 0 ? got.best : 5));
+            if (Number.isInteger(got.count)) q.set('count', String(got.count));
+        }
+        q.set('via', 'companion');
+        return REVIEWS + '/save?' + q.toString();
+    }
 
     /** The restaurant or store a delivery app's page is about, from its title; '' when the title names none. */
     function deliveryQuery(url, title) {
@@ -95,6 +142,7 @@
         const RENT = config.RENT_ORIGIN;
         const WATCH = config.WATCH_ORIGIN;
         const FOOD = config.FOOD_ORIGIN;
+        const REVIEWS = config.REVIEWS_ORIGIN;
         const origins = config.HANDOFF_ORIGINS;
         return {
             boardUrl: function (url, title) { return boardUrl(RENT, url, title); },
@@ -105,6 +153,7 @@
                 const q = deliveryQuery(url, title);
                 return FOOD + '/delivery' + (q ? '?' + new URLSearchParams({ q: q }).toString() : '');
             },
+            reviewUrl: function (url, title, rating) { return REVIEWS ? reviewUrl(REVIEWS, url, title, rating) : null; },
             isHandoff: function (url) { return isHandoff(origins, url); },
         };
     }
@@ -141,5 +190,5 @@
         return typeof url === 'string' && origins.some(function (o) { return url.indexOf(o + '/') === 0; });
     }
 
-    return { createHandoff, RENTAL_HOSTS, cleanUrl, isRental, isHandoff, isDelivery, deliveryQuery };
+    return { createHandoff, RENTAL_HOSTS, REVIEW_SITES, cleanUrl, isRental, isHandoff, isDelivery, deliveryQuery, reviewSite };
 });
