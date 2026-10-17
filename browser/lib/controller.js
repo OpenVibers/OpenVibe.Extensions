@@ -8,6 +8,7 @@
  *   await c.checkRent()                 // is this rent fair? on openvibe.rent/fair (a new tab)
  *   await c.watchPage()                 // open a new Watch for this page (a new tab)
  *   await c.compareDelivery()           // the restaurant on every delivery app, on openvibe.food (a new tab)
+ *   await c.saveRating()                // a review site's rating (lib/rating.js reads it) → openvibe.reviews/save (a new tab)
  *   await c.tryCodes(coupons)           // type the codes into this page's coupon box (lib/autoapply.js) → a view of it
  *   await c.report(couponId, 'worked')  // → { ok, message }
  *
@@ -81,6 +82,7 @@
                     handoff: ok,
                     rental: ok && deps.isRental ? deps.isRental(tab.url) : false,
                     delivery: ok && Boolean(handoff.deliveryUrl && handoff.deliveryUrl(tab.url, tab.title)),
+                    review: ok && Boolean(handoff.reviewUrl && handoff.reviewUrl(tab.url, tab.title, null)),
                 };
             },
 
@@ -88,6 +90,18 @@
             checkRent() { return handOff(function (u, t) { return handoff.fairUrl(u, t); }); },
             watchPage() { return handOff(function (u, t) { return handoff.watchUrl(u, t); }); },
             compareDelivery() { return handOff(function (u, t) { return handoff.deliveryUrl(u, t); }); },
+
+            /**
+             * Read the rating this review site's page states (lib/rating.js, injected on this press) and open
+             * openvibe.reviews/save with it for the person to check. When the page cannot be read, Reviews' form opens
+             * with the page's address and name, for them to type the numbers in.
+             */
+            async saveRating() {
+                let rating = null;
+                try { rating = await platform.scripting.readRating(tab.id); } catch (e) { rating = null; }
+                const r = await handOff(function (u, t) { return handoff.reviewUrl(u, t, rating); });
+                return r.ok ? Object.assign(r, { read: Boolean(rating && typeof rating.value === 'number') }) : r;
+            },
 
             /**
              * Try the codes in this page's own coupon box. → { ok, message, results: [{ id, code, outcome, saved }] }.

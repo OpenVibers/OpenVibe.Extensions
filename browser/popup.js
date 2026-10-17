@@ -84,7 +84,7 @@
             note);
     }
 
-    /** The two hand-off buttons: the board leads on a rental listing, Watch everywhere else. */
+    /** The hand-off buttons: the rating leads on a review site, the comparison on a delivery app, the board on a rental listing, Watch everywhere else. */
     function renderActions() {
         const p = controller.page();
         const section = document.getElementById('actions');
@@ -92,17 +92,21 @@
         const keep = document.getElementById('keep');
         const watch = document.getElementById('watch');
         const delivery = document.getElementById('delivery');
+        const rating = document.getElementById('rating');
         const note = document.getElementById('actions-note');
-        document.getElementById('actions-lede').textContent = p.delivery
+        document.getElementById('actions-lede').textContent = p.review
+            ? 'A review site? Bring the rating this page shows to OpenVibe Reviews: it appears beside this site’s link there, with the date. You check the numbers before saving.'
+            : p.delivery
             ? 'Ordering delivery? See the same restaurant on every delivery app, with each app’s own prices and fees.'
             : p.rental
                 ? 'A rental listing? Keep it on your board with your notes, or check its rent against what the city usually costs.'
                 : 'Keep this page on your Rent board, or have OpenVibe.Watch tell you when it changes.';
         delivery.hidden = !p.delivery;
+        rating.hidden = !p.review;
         // On a rental listing: is its rent fair for the city? (openvibe.rent/fair reads the rent, size and city.)
         const fair = document.getElementById('fair');
         fair.hidden = !p.rental;
-        (p.delivery ? delivery : p.rental ? keep : watch).classList.add('primary');
+        (p.review ? rating : p.delivery ? delivery : p.rental ? keep : watch).classList.add('primary');
         const go = function (fn) {
             return async function () {
                 const r = await fn();
@@ -114,6 +118,7 @@
         fair.addEventListener('click', go(controller.checkRent));
         watch.addEventListener('click', go(controller.watchPage));
         delivery.addEventListener('click', go(controller.compareDelivery));
+        rating.addEventListener('click', go(controller.saveRating));
         section.hidden = false;
     }
 

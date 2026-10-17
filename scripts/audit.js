@@ -3,8 +3,9 @@
  * The permission audit for browser/manifest.json. test/manifest.test.js runs it, and so does
  * scripts/pack.js before it writes a zip. It fails when anything widens:
  *
- *   permissions            exactly activeTab + scripting + storage (scripting runs lib/autoapply.js in the active tab only,
- *                          when the person presses "Try these codes on this page": activeTab is the only host access)
+ *   permissions            exactly activeTab + scripting + storage (scripting runs lib/autoapply.js or lib/rating.js in the
+ *                          active tab only, when the person presses "Try these codes on this page" or "Save its rating to
+ *                          OpenVibe Reviews": activeTab is the only host access)
  *   host_permissions       exactly <API origin>/*
  *   forbidden keys         content_scripts, background, web_accessible_resources,
  *                          externally_connectable, optional_permissions, optional_host_permissions,

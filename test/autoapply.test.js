@@ -111,7 +111,7 @@ const field = (attrs, labels = []) => ({
         assert.strictEqual(handoff.deliveryUrl('https://acme.com/pizza', 'Pizza'), null, 'not a delivery app');
         const p = popup({ url: cases[0][0], title: cases[0][1] });
         await p.controller.open();
-        assert.deepStrictEqual(p.controller.page(), { handoff: true, rental: false, delivery: true });
+        assert.deepStrictEqual(p.controller.page(), { handoff: true, rental: false, delivery: true, review: false });
         assert.deepStrictEqual(p.ext.opened, []);
         assert.strictEqual((await p.controller.compareDelivery()).ok, true);
         assert.deepStrictEqual(p.ext.opened, ['https://openvibe.food/delivery?q=Chipotle+Mexican+Grill']);

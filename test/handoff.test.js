@@ -61,7 +61,7 @@ const CLEAN = 'https://saltlakecity.craigslist.org/apa/d/sunny-2br/7790000001.ht
         await p.controller.open();
         assert.deepStrictEqual(p.ext.opened, [], 'nothing opens on its own');
         assert.deepStrictEqual(stub.requests.map((r) => r.url), ['/api/v1/merchants/resolve?host=saltlakecity.craigslist.org']);
-        assert.deepStrictEqual(p.controller.page(), { handoff: true, rental: true, delivery: false });
+        assert.deepStrictEqual(p.controller.page(), { handoff: true, rental: true, delivery: false, review: false });
 
         assert.deepStrictEqual(await p.controller.keepOnBoard(), { ok: true });
         assert.strictEqual(p.ext.opened.length, 1);
@@ -78,7 +78,7 @@ const CLEAN = 'https://saltlakecity.craigslist.org/apa/d/sunny-2br/7790000001.ht
     await check('pages that are not websites offer no hand-off, and platform.tabs.open refuses anywhere else', async () => {
         const p = popup({ url: 'chrome://extensions' });
         await p.controller.open();
-        assert.deepStrictEqual(p.controller.page(), { handoff: false, rental: false, delivery: false });
+        assert.deepStrictEqual(p.controller.page(), { handoff: false, rental: false, delivery: false, review: false });
         assert.strictEqual((await p.controller.keepOnBoard()).ok, false);
         assert.deepStrictEqual(p.ext.opened, []);
         const platform = createPlatform(fakeExt({}), config);
@@ -90,7 +90,7 @@ const CLEAN = 'https://saltlakecity.craigslist.org/apa/d/sunny-2br/7790000001.ht
     await check('a shop page that is not a rental leads with Watch', async () => {
         const p = popup({ url: 'https://acme-outdoor.com/tents/trail-2' });
         await p.controller.open();
-        assert.deepStrictEqual(p.controller.page(), { handoff: true, rental: false, delivery: false });
+        assert.deepStrictEqual(p.controller.page(), { handoff: true, rental: false, delivery: false, review: false });
     });
 
     await stub.close();
