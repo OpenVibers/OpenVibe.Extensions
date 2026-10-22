@@ -26,21 +26,23 @@
       "credential": "optional cpx_ install token (coupons.lookup, coupons.report); no Network session",
       "publishedToStores": false,
       "loadedInChrome": "yes: headless Chromium loads the 0.3.0 build (popup and options render, no console errors); lib/autoapply.js passes three fixture checkout pages in headless Chrome",
-      "loadedInFirefox": "not yet verified",
+      "loadedInFirefox": "not yet loaded in a browser; Mozilla's web-ext lint (8.10.0, what AMO runs on upload) passes with 0 errors, 0 warnings and 0 notices, and runs in CI with warnings as errors",
       "handoffs": [
         "https://openvibe.rent/board (keep a listing)",
         "https://openvibe.rent/fair (check the rent)",
         "https://openvibe.watch/watches/new (watch a page)",
         "https://openvibe.food/delivery (compare delivery apps)",
         "https://openvibe.reviews/save (a review site's rating, checked and saved on Reviews)"
-      ]
+      ],
+      "storeBuilds": "npm run pack:stores: dist/openvibe-companion-<version>-chrome.zip and -firefox.zip, reproducible, audited",
+      "storeListing": "store/ (listing, privacy and permission answers, screenshot plan); support URL https://openvibe.coupons/companion"
     }
   },
   "pending": [
     "OpenVibe.Coupons launched publicly on 2026-10-09 (https://openvibe.coupons); the database is still empty",
     "move Live's browser-extension/openvibe-kiosk-companion and hardware/ here (ADR-023), with a redirect README in Live",
-    "store listings (Chrome Web Store, addons.mozilla.org) and the store extension ids in COUPONS_EXTENSION_ORIGINS"
+    "owner: create the Chrome Web Store and AMO developer listings and upload the store zips with store/'s answers and screenshots; then put the Chrome extension id in COUPONS_EXTENSION_ORIGINS"
   ],
   "deployed": false,
-  "updated": "2026-09-28"
+  "updated": "2026-10-22"
 }

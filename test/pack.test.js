@@ -66,6 +66,22 @@ function unzip(buf) {
         assert.doesNotMatch(files.get('manifest.json').toString() + files.get('lib/config.js').toString(), /openvibe\.coupons\//);
     });
 
+    await check('the store zips differ from browser/ only by the other browser\'s manifest key, reproducibly', async () => {
+        const src = path.join(__dirname, '..', 'browser');
+        const full = JSON.parse(fs.readFileSync(path.join(src, 'manifest.json'), 'utf8'));
+        for (const [target, dropped] of [['chrome', 'browser_specific_settings'], ['firefox', 'minimum_chrome_version']]) {
+            const r = build({ outDir: tmp, target });
+            assert.match(path.basename(r.out), new RegExp(`^openvibe-companion-\\d+\\.\\d+\\.\\d+-${target}\\.zip$`));
+            const files = unzip(fs.readFileSync(r.out));
+            for (const [name, data] of files) if (name !== 'manifest.json') assert.ok(data.equals(fs.readFileSync(path.join(src, name))), name);
+            const want = { ...full };
+            delete want[dropped];
+            assert.deepStrictEqual(JSON.parse(files.get('manifest.json')), want);
+            assert.ok(fs.readFileSync(build({ outDir: tmp, target }).out).equals(fs.readFileSync(r.out)));
+        }
+        assert.throws(() => build({ outDir: tmp, target: 'chrome', api: 'http://localhost:4850' }), /release API origin/);
+    });
+
     await check('refuses remote http origins and anything that is not an origin', async () => {
         for (const bad of ['http://openvibe.coupons', 'http://evil.example.net', 'https://openvibe.coupons/path', 'ftp://x', '']) {
             assert.throws(() => build({ api: bad, outDir: tmp }), /--api/, bad);
