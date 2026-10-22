@@ -12,7 +12,16 @@ jobs:
       cache: false                    # and so no lockfile
       syntax-dirs: scripts
       pin-drift: false                # no openvibe-* pins
-  # The coupon helper's zip, kept 14 days for review.
+  # Mozilla's own linter (what addons.mozilla.org runs on upload); a warning fails the build.
+  firefox-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.1
+      - run: npm run lint:firefox
+  # The release zip and the two store zips, kept 14 days for review.
   package:
     runs-on: ubuntu-latest
     steps:
@@ -21,6 +30,7 @@ jobs:
         with:
           node-version: 22.22.1
       - run: npm run pack
+      - run: npm run pack:stores
       - uses: actions/upload-artifact@v4
         with:
           name: openvibe-coupons-helper

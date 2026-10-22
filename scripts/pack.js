@@ -4,6 +4,10 @@
  * Packs browser/ into a zip for loading or store review. It never uploads anything anywhere.
  *
  *   node scripts/pack.js                          → dist/openvibe-companion-<version>.zip
+ *   node scripts/pack.js --stores                 → dist/openvibe-companion-<version>-chrome.zip and
+ *                                                   dist/openvibe-companion-<version>-firefox.zip, the store uploads:
+ *     the Chrome zip drops browser_specific_settings (Chrome warns on it), the Firefox zip drops
+ *     minimum_chrome_version; nothing else differs from browser/.
  *   node scripts/pack.js --api http://localhost:4850
  *                                                 → dist/openvibe-companion-<version>-dev.zip,
  *     a development build whose API origin (lib/config.js), host permission and CSP connect-src
@@ -68,6 +72,15 @@ function listFiles(dir, base = dir) {
 }
 
 /** Copy of browser/ with the API origin rewritten (dev builds), as { name → Buffer }. */
+/** The store manifest for one browser: only drops the other browser's key (the audit runs on the full one). */
+function forTarget(files, target) {
+    const m = JSON.parse(files.get('manifest.json'));
+    if (target === 'chrome') delete m.browser_specific_settings;
+    else if (target === 'firefox') delete m.minimum_chrome_version;
+    else throw new Error('target must be chrome or firefox');
+    files.set('manifest.json', Buffer.from(JSON.stringify(m, null, 2) + '\n'));
+}
+
 function sourceFiles(apiOrigin) {
     const files = new Map(listFiles(SRC).map((f) => [f, fs.readFileSync(path.join(SRC, f))]));
     if (apiOrigin !== DEFAULT_ORIGIN) {
@@ -81,10 +94,11 @@ function sourceFiles(apiOrigin) {
     return files;
 }
 
-function build({ api = DEFAULT_ORIGIN, outDir = path.join(ROOT, 'dist') } = {}) {
+function build({ api = DEFAULT_ORIGIN, outDir = path.join(ROOT, 'dist'), target = null } = {}) {
     if (!/^https:\/\/[a-z0-9.-]+(:\d+)?$/.test(api) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(api)) {
         throw new Error('--api must be an https origin, or http://localhost / http://127.0.0.1 for development');
     }
+    if (target && api !== DEFAULT_ORIGIN) throw new Error('store builds use the release API origin only');
     const files = sourceFiles(api);
     const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ov-ext-pack-'));
     try {
@@ -92,10 +106,11 @@ function build({ api = DEFAULT_ORIGIN, outDir = path.join(ROOT, 'dist') } = {}) 
         const audit = auditDir(tmp);
         if (audit.problems.length) throw new Error(`permission audit failed:\n  - ${audit.problems.join('\n  - ')}`);
         const version = audit.manifest.version;
+        if (target) forTarget(files, target);
         fs.mkdirSync(outDir, { recursive: true });
-        const out = path.join(outDir, `openvibe-companion-${version}${api === DEFAULT_ORIGIN ? '' : '-dev'}.zip`);
+        const out = path.join(outDir, `openvibe-companion-${version}${api === DEFAULT_ORIGIN ? '' : '-dev'}${target ? '-' + target : ''}.zip`);
         fs.writeFileSync(out, zip([...files].map(([name, data]) => ({ name, data }))));
-        return { out, files: [...files.keys()], origin: api };
+        return { out, files: [...files.keys()], origin: api, target };
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }
@@ -104,8 +119,12 @@ function build({ api = DEFAULT_ORIGIN, outDir = path.join(ROOT, 'dist') } = {}) 
 if (require.main === module) {
     const i = process.argv.indexOf('--api');
     try {
-        const r = build({ api: i > -1 ? String(process.argv[i + 1] || '').replace(/\/+$/, '') : DEFAULT_ORIGIN });
-        console.log(`wrote ${path.relative(process.cwd(), r.out)} (${r.files.length} files, API ${r.origin})`);
+        const runs = process.argv.includes('--stores') ? [{ target: 'chrome' }, { target: 'firefox' }]
+            : [{ api: i > -1 ? String(process.argv[i + 1] || '').replace(/\/+$/, '') : DEFAULT_ORIGIN }];
+        for (const opts of runs) {
+            const r = build(opts);
+            console.log(`wrote ${path.relative(process.cwd(), r.out)} (${r.files.length} files, API ${r.origin}${r.target ? ', ' + r.target : ''})`);
+        }
     } catch (err) {
         console.error(err.message);
         process.exit(1);

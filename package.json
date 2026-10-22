@@ -6,6 +6,8 @@
   "scripts": {
     "test": "node test/run.js",
     "pack": "node scripts/pack.js",
+    "pack:stores": "node scripts/pack.js --stores",
+    "lint:firefox": "npx --yes web-ext@8.10.0 lint --source-dir browser --warnings-as-errors",
     "pack:dev": "node scripts/pack.js --api http://localhost:4850",
     "icons": "node scripts/icons.js"
   },
