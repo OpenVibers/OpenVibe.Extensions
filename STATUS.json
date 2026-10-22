@@ -5,6 +5,7 @@
   "wave": "W18",
   "plan": "OpenVibe End-to-End Realignment & Implementation Plan, revision 3 (20 Sep 2026)",
   "adr": "OpenVibe.Contracts ADR-023 (first-party client surfaces)",
+  "version": "0.5.0",
   "surfaces": {
     "browser": {
       "name": "OpenVibe Companion",
@@ -39,10 +40,20 @@
     }
   },
   "pending": [
-    "OpenVibe.Coupons launched publicly on 2026-10-09 (https://openvibe.coupons); the database is still empty",
-    "move Live's browser-extension/openvibe-kiosk-companion and hardware/ here (ADR-023), with a redirect README in Live",
-    "owner: create the Chrome Web Store and AMO developer listings and upload the store zips with store/'s answers and screenshots; then put the Chrome extension id in COUPONS_EXTENSION_ORIGINS"
+    "owner: create the Chrome Web Store and AMO developer listings and upload the store zips with store/'s answers and screenshots; then put the Chrome extension id in COUPONS_EXTENSION_ORIGINS",
+    "Firefox: the extension loaded and run in a real Firefox (web-ext lint passes; nothing has run it yet)",
+    "use: on 2026-10-22 OpenVibe.Coupons had issued no install token and received no code report; it held 169 codes for 16 of its 37 merchants, all from the DealNews feed through OpenVibe.Sources"
   ],
   "deployed": false,
+  "features": [
+    "OpenVibe Companion (Manifest V3): tries the coupon codes OpenVibe.Coupons knows on a checkout page",
+    "keeps a rental listing on the OpenVibe.Rent board, and checks its rent against the city median",
+    "watches a page on OpenVibe.Watch, and compares delivery apps on OpenVibe.Food",
+    "saves a review site's stated rating to OpenVibe.Reviews (read only when pressed, only on those sites)",
+    "an optional cpx_ install token, never a Network session; only openvibe.coupons as a host permission",
+    "store-ready: reproducible Chrome and Firefox store zips (npm run pack:stores), listing and privacy answers in store/, Mozilla web-ext lint in CI",
+    "kiosk companion (Firefox new-tab page and history bridge for Live's /kiosk), moved from OpenVibe.Live",
+    "hardware/: the Raspberry Pi streamer and controller scripts, moved from OpenVibe.Live"
+  ],
   "updated": "2026-10-22"
 }

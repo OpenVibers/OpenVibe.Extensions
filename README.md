@@ -11,7 +11,8 @@ and runs in CI; it hasn't been loaded in a running Firefox yet. It is **not publ
 store yet: the store zips, listing text and privacy answers are ready (`npm run pack:stores`,
 [store/](store/)), and only the owner's developer-account step is left. OpenVibe.Coupons is
 public at `https://openvibe.coupons` since 2026-10-09, so the release build talks to the live
-Coupons API.
+Coupons API. On 2026-10-22 Coupons held 169 codes for 16 of its 37 merchants, all from the DealNews feed through
+OpenVibe.Sources; it had issued no install token and received no code report.
 **Decision record:** [ADR-023](https://github.com/OpenVibers/OpenVibe.Contracts/blob/main/docs/adr/ADR-023-client-surfaces.md) (first-party client surfaces and their home). Roadmap §4.2 D.
 **License:** MIT.
 
