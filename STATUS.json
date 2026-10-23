@@ -5,11 +5,11 @@
   "wave": "W18",
   "plan": "OpenVibe End-to-End Realignment & Implementation Plan, revision 3 (20 Sep 2026)",
   "adr": "OpenVibe.Contracts ADR-023 (first-party client surfaces)",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "surfaces": {
     "browser": {
       "name": "OpenVibe Companion",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "manifest": 3,
       "targets": [
         "chromium >= 111",
@@ -47,7 +47,7 @@
   "deployed": false,
   "features": [
     "OpenVibe Companion (Manifest V3): tries the coupon codes OpenVibe.Coupons knows on a checkout page",
-    "keeps a rental listing on the OpenVibe.Rent board, and checks its rent against the city median",
+    "keeps a rental listing from any site on the OpenVibe.Rent board with the price, city and bedrooms the page states (read only when pressed), and checks its rent against the city median",
     "watches a page on OpenVibe.Watch, and compares delivery apps on OpenVibe.Food",
     "saves a review site's stated rating to OpenVibe.Reviews (read only when pressed, only on those sites)",
     "an optional cpx_ install token, never a Network session; only openvibe.coupons as a host permission",
@@ -55,5 +55,5 @@
     "kiosk companion (Firefox new-tab page and history bridge for Live's /kiosk), moved from OpenVibe.Live",
     "hardware/: the Raspberry Pi streamer and controller scripts, moved from OpenVibe.Live"
   ],
-  "updated": "2026-10-22"
+  "updated": "2026-10-23"
 }

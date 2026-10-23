@@ -35,11 +35,14 @@ One button in the browser for the OpenVibe sites that work with the page you are
 - **Keep on my Rent board.** On a rental listing (Craigslist, Facebook Marketplace, Zillow,
   Apartments.com, Zumper, Airbnb and the rest) or any page, it opens
   [openvibe.rent/board](https://openvibe.rent/board) with the listing's address and title filled in,
-  so every listing from every site sits in one list with your notes and how far you got. On a rental
-  site this is the main button.
+  and the price and city the page states (`lib/listing.js` reads them when you press: the structured data
+  the site publishes for search engines, else its price tag), so every listing from every site sits in one
+  list with your notes and how far you got. You check them there before saving. On a rental site this is
+  the main button.
 - **Check the rent.** On a rental listing it opens [openvibe.rent/fair](https://openvibe.rent/fair) with the listing's
-  address and title: Rent reads the monthly rent, the bedrooms and the city from them (and says which it read), and
-  compares the rent with the city's median for that size from the Census Bureau. Nothing is read from the page itself.
+  address and title, and the monthly rent in dollars, the bedrooms and the city the page states (read the same way;
+  a sale price or another currency is left out). Rent reads what is missing from the address and title (and says
+  which it read), and compares the rent with the city's median for that size from the Census Bureau.
 - **Watch this page.** It opens a new watch on [OpenVibe.Watch](https://openvibe.watch) for the page,
   which tells you (or runs your agent) when it changes.
 - **Compare delivery apps.** On DoorDash, Uber Eats, Grubhub, Seamless, Caviar or Instacart it opens
@@ -72,11 +75,11 @@ the Companion never rewrites links or adds referral tags.
 
 | | |
 |---|---|
-| **Permissions** | `activeTab`, `scripting` and `storage`. The host permission is `https://openvibe.coupons/*` only. `scripting` is used for two buttons: "Try these codes on this page" injects the packaged `lib/autoapply.js`, and "Save its rating to OpenVibe Reviews" injects `lib/rating.js`, into the active tab (the access `activeTab` gives after you press the button), in its top frame and the extension's isolated world. |
+| **Permissions** | `activeTab`, `scripting` and `storage`. The host permission is `https://openvibe.coupons/*` only. `scripting` is used for four buttons: "Try these codes on this page" injects the packaged `lib/autoapply.js`, "Save its rating to OpenVibe Reviews" injects `lib/rating.js`, and "Keep on my Rent board" and "Check the rent" inject `lib/listing.js`, into the active tab (the access `activeTab` gives after you press the button), in its top frame and the extension's isolated world. |
 | **Not requested** | `<all_urls>`, `tabs`, `cookies`, `webRequest`, `history`, optional permissions, content scripts, a background worker, web-accessible resources, `externally_connectable`. |
-| **Read from the page** | The active tab's **URL and title**, when you open the popup (that's what `activeTab` grants). The page's content only when you press "Try these codes on this page": `lib/autoapply.js` finds the coupon box, its Apply button and the order total, types the codes in, and returns to the popup which codes changed the total. It makes no request, reads no cookies or storage, and sends nothing anywhere; `test/manifest.test.js` scans it for that. On a review site, "Save its rating to OpenVibe Reviews" runs `lib/rating.js`, which only reads: the page's name, its rating, the scale, how many ratings, and the city from its structured data. Browser pages, files, IP addresses and local names are "not a site", and nothing is sent or offered for them. |
+| **Read from the page** | The active tab's **URL and title**, when you open the popup (that's what `activeTab` grants). The page's content only when you press "Try these codes on this page": `lib/autoapply.js` finds the coupon box, its Apply button and the order total, types the codes in, and returns to the popup which codes changed the total. It makes no request, reads no cookies or storage, and sends nothing anywhere; `test/manifest.test.js` scans it for that. On a review site, "Save its rating to OpenVibe Reviews" runs `lib/rating.js`, which only reads: the page's name, its rating, the scale, how many ratings, and the city from its structured data. "Keep on my Rent board" and "Check the rent" run `lib/listing.js`, which only reads: the price and its currency, the city and region (never the street) and the bedrooms, from the structured data, else the page's price tag. Browser pages, files, IP addresses and local names are "not a site", and nothing is sent or offered for them. |
 | **Sent by the extension** | To `https://openvibe.coupons` only, and only the **hostname** (`lib/host.js` drops the path, query, fragment, port and credentials first): `GET /api/v1/merchants/resolve?host=`, the merchant id (`GET /api/v1/merchants/:id/coupons`), and, when you report, the code id plus `worked` or `failed` with an optional reason. Every request goes with `credentials: 'omit'` (no cookies), `referrerPolicy: 'no-referrer'` and `redirect: 'error'`. |
-| **Hand-offs (only when you press the button)** | "Keep on my Rent board", "Check the rent", "Watch this page", "Compare delivery apps" and "Save its rating to OpenVibe Reviews" open **a new tab you see** on `https://openvibe.rent/board`, `https://openvibe.rent/fair`, `https://openvibe.watch/watches/new`, `https://openvibe.food/delivery` or `https://openvibe.reviews/save`, with the page's address and title (and, for Reviews, the rating read from it) in that tab's address. `lib/handoff.js` removes the credentials, the fragment and tracking parameters (`utm_*`, `fbclid`, `gclid`, …) first. The extension makes no request for it, nothing opens on its own, and nothing is saved until you save it on that site. `platform.tabs.open()` refuses any other origin, and the permission audit allows only `https://openvibe.<tld>` hand-off origins. |
+| **Hand-offs (only when you press the button)** | "Keep on my Rent board", "Check the rent", "Watch this page", "Compare delivery apps" and "Save its rating to OpenVibe Reviews" open **a new tab you see** on `https://openvibe.rent/board`, `https://openvibe.rent/fair`, `https://openvibe.watch/watches/new`, `https://openvibe.food/delivery` or `https://openvibe.reviews/save`, with the page's address and title (and, for Reviews, the rating read from it; for Rent, the price, city and bedrooms read from it) in that tab's address. `lib/handoff.js` removes the credentials, the fragment and tracking parameters (`utm_*`, `fbclid`, `gclid`, …) first. The extension makes no request for it, nothing opens on its own, and nothing is saved until you save it on that site. `platform.tabs.open()` refuses any other origin, and the permission audit allows only `https://openvibe.<tld>` hand-off origins. |
 | **Stored** | Only the optional install token, in `storage.local`. It is never synced to other devices. |
 | **CSP** | `default-src 'none'; script-src 'self'; connect-src https://openvibe.coupons; object-src 'none'`. There is no inline script, no remote code, no `eval`, and no `innerHTML`: the popup builds DOM nodes and sets text. |
 
@@ -113,6 +116,7 @@ browser/
   lib/handoff.js         the Rent board, Watch, Food delivery and Reviews addresses, built from a cleaned URL; which sites are rentals and review sites
   lib/autoapply.js       "Try these codes on this page": injected into the active tab only when you press it
   lib/rating.js          "Save its rating to OpenVibe Reviews": reads a review site's rating, injected only when you press it
+  lib/listing.js         "Keep on my Rent board" / "Check the rent": reads a listing's price, city and bedrooms, injected only when you press
   lib/api.js             the only code that makes requests
   lib/controller.js      popup logic without the DOM (tested in Node)
   lib/platform.js        chrome.* / browser.*: tabs.query, tabs.create (hand-off pages only), storage.local, permissions

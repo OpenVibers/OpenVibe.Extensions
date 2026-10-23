@@ -2,9 +2,11 @@
  * Hand-offs: the pages the Companion opens on OpenVibe sites with the page you are on, when you
  * press a button for it — never on its own.
  *
- *   boardUrl(url, title)  https://openvibe.rent/board?url=…&title=…        keep a listing on your Rent board
- *   fairUrl(url, title)   https://openvibe.rent/fair?url=…&title=…         is this rent fair? (Rent reads the rent, size
- *                         and city from the address and title, says what it read, and compares with the city's median)
+ *   boardUrl(url, title, listing)  https://openvibe.rent/board?url=…&title=…&price=…&place=…   keep a listing on your
+ *                         Rent board, with the price and "City, Region" lib/listing.js read from the page when it could
+ *   fairUrl(url, title, listing)   https://openvibe.rent/fair?url=…&title=…&rent=…&beds=…&where=…   is this rent fair?
+ *                         (what the page states, else Rent reads the rent, size and city from the address and title;
+ *                         it says what it read and compares with the city's median)
  *   watchUrl(url, title)  https://openvibe.watch/watches/new?template=page… watch the page for changes
  *   deliveryUrl(url, title)  https://openvibe.food/delivery?q=…            the same restaurant on every delivery app
  *                         (on a DoorDash, Uber Eats, Grubhub, Seamless, Caviar or Instacart page: the restaurant or
@@ -145,8 +147,8 @@
         const REVIEWS = config.REVIEWS_ORIGIN;
         const origins = config.HANDOFF_ORIGINS;
         return {
-            boardUrl: function (url, title) { return boardUrl(RENT, url, title); },
-            fairUrl: function (url, title) { return fairUrl(RENT, url, title); },
+            boardUrl: function (url, title, listing) { return boardUrl(RENT, url, title, listing); },
+            fairUrl: function (url, title, listing) { return fairUrl(RENT, url, title, listing); },
             watchUrl: function (url, title) { return watchUrl(WATCH, url, title); },
             deliveryUrl: function (url, title) {
                 if (!FOOD || !isDelivery(url)) return null;
@@ -158,21 +160,35 @@
         };
     }
 
-    function boardUrl(RENT, url, title) {
+    /** A number lib/listing.js read, as the address carries it ("1850", "1850.5"); '' when there is none. */
+    function amount(v) {
+        return typeof v === 'number' && Number.isFinite(v) && v > 0 && v < 1e8 ? String(Math.round(v * 100) / 100) : '';
+    }
+
+    function boardUrl(RENT, url, title, listing) {
         const page = cleanUrl(url);
         if (!page) return null;
+        const got = listing || {};
         const q = new URLSearchParams({ url: page });
         const t = cleanTitle(title, 200);
         if (t) q.set('title', t);
+        if (amount(got.price)) q.set('price', amount(got.price));
+        if (got.place) q.set('place', cleanTitle(got.place, 120));
         return RENT + '/board?' + q.toString();
     }
 
-    function fairUrl(RENT, url, title) {
+    function fairUrl(RENT, url, title, listing) {
         const page = cleanUrl(url);
         if (!page) return null;
+        const got = listing || {};
         const q = new URLSearchParams({ url: page });
         const t = cleanTitle(title, 200);
         if (t) q.set('title', t);
+        // The fair check compares a monthly rent in dollars with the Census median: a sale price or another
+        // currency is left for the person to type.
+        if (amount(got.price) && got.price <= 50000 && (!got.currency || got.currency === 'USD')) q.set('rent', String(Math.round(got.price)));
+        if (Number.isInteger(got.beds) && got.beds >= 0 && got.beds <= 20) q.set('beds', String(got.beds));
+        if (got.place) q.set('where', cleanTitle(got.place, 120));
         return RENT + '/fair?' + q.toString();
     }
 
