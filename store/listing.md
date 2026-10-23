@@ -37,7 +37,7 @@ AMO "summary" (250 at most): the same sentence.
 >
 > **Save a review site's rating.** On Glassdoor, Indeed, Yelp, the BBB, Trustpilot, Google Maps or Tripadvisor, "Save its rating to OpenVibe Reviews" reads the rating the page states and opens openvibe.reviews to check and save it.
 >
-> **Keep a listing, watch a page.** "Keep on my Rent board" and "Check the rent" open OpenVibe Rent with the listing's address; "Watch this page" opens OpenVibe Watch to tell you when the page changes.
+> **Keep a listing, watch a page.** "Keep on my Rent board" and "Check the rent" open OpenVibe Rent with the listing's address and the price, city and bedrooms it states, from any site; "Watch this page" opens OpenVibe Watch to tell you when the page changes.
 >
 > **What it can see.** The Companion asks for no access to your sites until you open it on a tab (the browser's "active tab" permission). It has no background worker, no content scripts, and no access to your history, cookies or other tabs. Every hand-off opens a tab you can see, and nothing is saved until you save it there. The only thing it stores is the optional install token, on this device.
 >

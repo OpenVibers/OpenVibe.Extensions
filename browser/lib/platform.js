@@ -15,6 +15,8 @@
  *                           that click) and run it with the codes; returns what it saw
  *   scripting.readRating(tabId)            when the person presses "Save its rating to OpenVibe Reviews" on a review
  *                           site: inject lib/rating.js the same way and return the rating the page states
+ *   scripting.readListing(tabId)           when the person presses "Keep on my Rent board" or "Check the rent": inject
+ *                           lib/listing.js the same way and return the price, city and bedrooms the page states
  *
  * Nothing else: no cookies, no history, and the page is touched only by that one button.
  */
@@ -60,6 +62,12 @@
                     if (!ext.scripting || !Number.isInteger(tabId)) throw new TypeError('this browser cannot read the page');
                     await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, files: ['lib/rating.js'] }]);
                     const out = await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, func: function () { return self.OVRating.read(document); } }]);
+                    return out && out[0] ? out[0].result : null;
+                },
+                async readListing(tabId) {
+                    if (!ext.scripting || !Number.isInteger(tabId)) throw new TypeError('this browser cannot read the page');
+                    await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, files: ['lib/listing.js'] }]);
+                    const out = await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, func: function () { return self.OVListing.read(document); } }]);
                     return out && out[0] ? out[0].result : null;
                 },
             },
