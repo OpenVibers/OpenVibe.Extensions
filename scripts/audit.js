@@ -21,17 +21,35 @@ const fs = require('fs');
 const path = require('path');
 
 const ALLOWED_KEYS = new Set(['manifest_version', 'name', 'short_name', 'version', 'description', 'homepage_url', 'author', 'icons',
-    'action', 'options_ui', 'permissions', 'host_permissions', 'content_security_policy', 'minimum_chrome_version', 'browser_specific_settings']);
-const PERMISSIONS = ['activeTab', 'scripting', 'storage'];
+    'action', 'options_ui', 'permissions', 'host_permissions', 'content_security_policy', 'minimum_chrome_version', 'browser_specific_settings',
+    'side_panel', 'sidebar_action']);
+const BASE_PERMISSIONS = ['activeTab', 'scripting', 'storage'];
+const SIDE_PERMISSIONS = ['sidePanel', 'sidebarAction'];
+const PERMISSIONS = BASE_PERMISSIONS.concat(['sidePanel']);
 
-function auditManifest(m, { apiOrigin }) {
+function auditManifest(m, { apiOrigin, origins } = {}) {
     const problems = [];
+    const os = (origins && origins.length ? origins : [apiOrigin]).filter(Boolean);
     if (m.manifest_version !== 3) problems.push('manifest_version must be 3');
     for (const k of Object.keys(m)) if (!ALLOWED_KEYS.has(k)) problems.push(`manifest key "${k}" is not allowed`);
     const perms = Array.isArray(m.permissions) ? m.permissions : [];
-    if (perms.length !== PERMISSIONS.length || !PERMISSIONS.every((p) => perms.includes(p))) problems.push(`permissions must be exactly ${PERMISSIONS.join(', ')} (got ${perms.join(', ') || 'none'})`);
+    const extra = perms.filter((p) => !BASE_PERMISSIONS.includes(p));
+    if (perms.length !== BASE_PERMISSIONS.length + 1 || !BASE_PERMISSIONS.every((p) => perms.includes(p))) {
+        problems.push(`permissions must be exactly ${BASE_PERMISSIONS.join(', ')} plus one side-panel permission (got ${perms.join(', ') || 'none'})`);
+    }
+    if (extra.length !== 1 || !SIDE_PERMISSIONS.includes(extra[0])) {
+        problems.push(`the only extra permission may be sidePanel (sidebarAction on Firefox) (got ${extra.join(', ') || 'none'})`);
+    }
     const hosts = Array.isArray(m.host_permissions) ? m.host_permissions : [];
-    if (hosts.length !== 1 || hosts[0] !== `${apiOrigin}/*`) problems.push(`host_permissions must be exactly ${apiOrigin}/* (got ${hosts.join(', ') || 'none'})`);
+    const want = os.map((o) => o + '/*').sort();
+    if (hosts.length !== want.length || hosts.slice().sort().join() !== want.join()) {
+        problems.push(`host_permissions must be exactly ${want.join(', ')} (got ${hosts.join(', ') || 'none'})`);
+    }
+    const panel = m.side_panel || m.sidebar_action;
+    if (!panel) problems.push('the side panel needs side_panel (Chrome) or sidebar_action (Firefox)');
+    else if ((m.side_panel && m.side_panel.default_path !== 'panel.html') || (m.sidebar_action && m.sidebar_action.default_panel !== 'panel.html')) {
+        problems.push('the side panel opens panel.html');
+    }
     if (!m.action || m.action.default_popup !== 'popup.html') problems.push('action.default_popup must be popup.html');
     if (!m.options_ui || m.options_ui.page !== 'options.html') problems.push('options_ui.page must be options.html');
     const csp = m.content_security_policy && m.content_security_policy.extension_pages;
@@ -39,7 +57,7 @@ function auditManifest(m, { apiOrigin }) {
     else {
         const dirs = Object.fromEntries(csp.split(';').map((d) => d.trim()).filter(Boolean).map((d) => { const [k, ...v] = d.split(/\s+/); return [k, v]; }));
         if (JSON.stringify(dirs['script-src']) !== JSON.stringify(["'self'"])) problems.push("CSP script-src must be exactly 'self'");
-        if (JSON.stringify(dirs['connect-src']) !== JSON.stringify([apiOrigin])) problems.push(`CSP connect-src must be exactly ${apiOrigin}`);
+        if (JSON.stringify(dirs['connect-src'].slice().sort()) !== JSON.stringify(os.slice().sort())) problems.push(`CSP connect-src must be exactly ${os.join(' ')}`);
         if (JSON.stringify(dirs['default-src']) !== JSON.stringify(["'none'"])) problems.push("CSP default-src must be 'none'");
         if (JSON.stringify(dirs['object-src']) !== JSON.stringify(["'none'"])) problems.push("CSP object-src must be 'none'");
         if (/unsafe-|\*|data:|blob:|http:(?!\/\/(localhost|127\.0\.0\.1))/.test(csp)) problems.push('CSP must not allow unsafe-*, wildcards, data:, blob: or remote http');
@@ -67,14 +85,18 @@ function auditDir(dir) {
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
     const configSrc = fs.readFileSync(path.join(dir, 'lib', 'config.js'), 'utf8');
     const origin = (configSrc.match(/API_ORIGIN:\s*'([^']+)'/) || [])[1];
+    const network = (configSrc.match(/NETWORK_ORIGIN:\s*'([^']+)'/) || [])[1];
+    const chat = (configSrc.match(/CHAT_ORIGIN:\s*'([^']+)'/) || [])[1];
     const handoffs = ((configSrc.match(/HANDOFF_ORIGINS:\s*Object\.freeze\(\[([^\]]*)\]\)/) || [])[1] || '').split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
     const problems = [];
     if (!origin) problems.push('lib/config.js has no API_ORIGIN');
     if (!handoffs.length) problems.push('lib/config.js has no HANDOFF_ORIGINS');
     for (const h of handoffs) if (!/^https:\/\/openvibe\.[a-z]+$/.test(h)) problems.push(`hand-off origin ${h} is not an https://openvibe.<tld> site`);
-    problems.push(...auditManifest(manifest, { apiOrigin: origin }));
-    for (const page of ['popup.html', 'options.html']) problems.push(...auditPage(fs.readFileSync(path.join(dir, page), 'utf8'), page));
-    return { manifest, origin, problems };
+    const origins = [origin, network, chat].filter(Boolean);
+    for (const o of [network, chat].filter(Boolean)) if (!/^https:\/\/openvibe\.[a-z]+$/.test(o)) problems.push(`${o} is not an https://openvibe.<tld> site`);
+    problems.push(...auditManifest(manifest, { apiOrigin: origin, origins }));
+    for (const page of ['popup.html', 'options.html', 'panel.html']) problems.push(...auditPage(fs.readFileSync(path.join(dir, page), 'utf8'), page));
+    return { manifest, origin, origins, problems };
 }
 
-module.exports = { auditManifest, auditPage, auditDir, PERMISSIONS, ALLOWED_KEYS };
+module.exports = { auditManifest, auditPage, auditDir, PERMISSIONS, BASE_PERMISSIONS, ALLOWED_KEYS };

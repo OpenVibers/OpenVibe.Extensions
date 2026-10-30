@@ -1,0 +1,275 @@
+/* openvibe-shared/kit.css — the OpenVibe Kit's look (kit.js builds the markup; docs/kit.md describes every piece).
+ *
+ * Phone first: a page fits the screen it is on. The head and its tabs stick under the navbar, the dock (a conversation's
+ * composer, a form's save) sticks above the navbar's app bar, rows are 44 px or more to the touch, nothing scrolls
+ * sideways but a strip that is meant to (tabs, numbers, chips). From 600 px (a tablet) lists breathe and numbers sit in
+ * a row; from 1024 px (a computer) .ovk-split puts a side panel beside the content.
+ *
+ * Colours come from the site's theme (theme-loader.js: --bg-*, --text-*, --accent, --accent-strong, --border, --success,
+ * --danger…), so the kit wears every site's theme and every theme's light and dark; the fallbacks are the network's
+ * default dark. Every class starts with ovk- and nothing here styles bare elements, so the kit can sit beside a site's
+ * own CSS. */
+
+:root {
+    --ovk-bg: var(--bg-primary, #0b0f17);
+    --ovk-panel: var(--bg-card, var(--bg-secondary, #121826));
+    --ovk-panel-2: var(--bg-hover, var(--bg-tertiary, #1a2233));
+    --ovk-input: var(--bg-input, var(--bg-tertiary, #0f1522));
+    --ovk-line: var(--border, rgba(255, 255, 255, .1));
+    --ovk-text: var(--text-primary, #e8ecf3);
+    --ovk-muted: var(--text-muted, var(--text-secondary, #93a0b4));
+    --ovk-accent: var(--accent, #3b82f6);
+    --ovk-fill: var(--accent-strong, var(--accent, #3b82f6));
+    --ovk-on-fill: var(--on-accent-strong, var(--on-accent, #fff));
+    --ovk-ok: var(--success, #22c55e);
+    --ovk-warn: var(--warning, #f59e0b);
+    --ovk-bad: var(--danger, var(--error, #ef4444));
+    --ovk-live: var(--live-red, #ef4444);
+    --ovk-radius: 14px;
+    --ovk-radius-sm: 10px;
+    --ovk-tap: 44px;
+    --ovk-top: var(--ovnav-real-h, 52px);          /* the navbar's height: sticky things stop under it */
+    --ovk-bottom: var(--ovnav-appbar-h, 0px);      /* the app bar's height on phones (navbar.js sets it) */
+    --ovk-font: var(--ov-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
+}
+
+/* Heading and paragraph rules double their class (.ovk-section.ovk-section > h2): a site's own ".site h2" has the same
+ * specificity as ".ovk-section > h2" and loads later, so it used to restyle the kit's headings (Report, 2026-10-29). */
+
+/* ── Basics ── */
+.ovk-i { width: 1.15em; height: 1.15em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.2em; }
+.ovk-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.ovk-muted { color: var(--ovk-muted); }
+.ovk-inline { display: inline; margin: 0; }
+.ovk-page { box-sizing: border-box; width: 100%; max-width: 960px; margin: 0 auto; padding: 0 16px 24px; color: var(--ovk-text); font-family: var(--ovk-font); }
+.ovk-page--wide { max-width: 1280px; }
+
+/* ── Buttons ── */
+.ovk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; min-height: var(--ovk-tap); padding: 10px 18px; border-radius: 12px; border: 1px solid transparent; font: inherit; font-weight: 700; font-size: .95rem; line-height: 1.2; text-decoration: none; cursor: pointer; transition: filter .12s, border-color .12s, background .12s; }
+.ovk-btn--primary { background: var(--ovk-fill); color: var(--ovk-on-fill); }
+.ovk-btn--primary:hover { filter: brightness(1.08); }
+.ovk-btn--quiet { background: var(--ovk-panel); color: var(--ovk-text); border-color: var(--ovk-line); }
+.ovk-btn--quiet:hover { border-color: var(--ovk-accent); }
+.ovk-btn--ghost { background: transparent; color: var(--ovk-accent); padding-left: 8px; padding-right: 8px; }
+.ovk-btn--danger { background: transparent; color: var(--ovk-bad); border-color: color-mix(in srgb, var(--ovk-bad) 45%, transparent); }
+.ovk-btn--danger:hover { background: color-mix(in srgb, var(--ovk-bad) 12%, transparent); }
+.ovk-btn--small { min-height: 36px; padding: 6px 13px; border-radius: 999px; font-size: .88rem; }
+.ovk-btn:focus-visible, .ovk-icon-btn:focus-visible, .ovk-go:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: 2px; }
+.ovk-btn[disabled] { opacity: .55; cursor: default; filter: none; }
+.ovk-icon-btn { display: inline-grid; place-items: center; box-sizing: border-box; width: 40px; height: 40px; flex: none; padding: 0; border-radius: 12px; border: 1px solid transparent; background: transparent; color: var(--ovk-muted); font: inherit; cursor: pointer; text-decoration: none; list-style: none; }
+.ovk-icon-btn::-webkit-details-marker { display: none; }
+.ovk-icon-btn:hover { color: var(--ovk-text); background: var(--ovk-panel-2); border-color: var(--ovk-line); }
+.ovk-icon-btn[hidden] { display: none; }
+.ovk-icon-btn.is-done { color: var(--ovk-ok); }
+.ovk-icon-btn--danger:hover { color: var(--ovk-bad); }
+.ovk-icon-btn .ovk-i { width: 20px; height: 20px; }
+@media (pointer: coarse) { .ovk-icon-btn { width: var(--ovk-tap); height: var(--ovk-tap); } }
+.ovk-badge { display: inline-flex; align-items: center; flex: none; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--ovk-line); font-size: .7rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--ovk-muted); white-space: nowrap; }
+.ovk-badge--accent { color: var(--ovk-accent); border-color: color-mix(in srgb, var(--ovk-accent) 50%, transparent); }
+.ovk-badge--ok { color: var(--ovk-ok); border-color: color-mix(in srgb, var(--ovk-ok) 50%, transparent); }
+.ovk-badge--warn { color: var(--ovk-warn); border-color: color-mix(in srgb, var(--ovk-warn) 50%, transparent); }
+.ovk-badge--bad { color: var(--ovk-bad); border-color: color-mix(in srgb, var(--ovk-bad) 50%, transparent); }
+.ovk-badge--live { color: #fff; background: var(--ovk-live); border-color: transparent; }
+.ovk-dot { display: inline-grid; place-items: center; flex: none; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: var(--ovk-fill); color: var(--ovk-on-fill); font-size: .72rem; font-weight: 800; }
+
+/* ── The head: back, title and one line, icon actions; its tabs under it; sticky under the navbar ── */
+.ovk-head { position: sticky; top: var(--ovk-top); z-index: 40; margin: 0 -16px 12px; padding: 6px 16px 0; background: color-mix(in srgb, var(--ovk-bg) 88%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid transparent; transition: border-color .2s, box-shadow .2s; }
+.ovk-scrolled .ovk-head { border-bottom-color: var(--ovk-line); box-shadow: 0 10px 24px -18px rgba(0, 0, 0, .7); }
+.ovk-head--static { position: static; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.ovk-head-row { display: flex; align-items: center; gap: 6px; min-height: 48px; padding-bottom: 6px; }
+.ovk-head-row > .ovk-back { margin-left: -8px; }
+.ovk-head-id { flex: 1; min-width: 0; }
+.ovk-head-id.ovk-head-id h1, .ovk-head-id.ovk-head-id h2 { margin: 0; color: var(--ovk-text); font-family: var(--ovk-font); font-size: clamp(1.15rem, 4.2vw, 1.5rem); font-weight: 800; letter-spacing: -.01em; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovk-sub { margin: 2px 0 0; color: var(--ovk-muted); font-size: .86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovk-head-tools { display: flex; align-items: center; gap: 2px; margin-right: -8px; }
+.ovk-head-tools form { margin: 0; }
+.ovk-tabs { position: relative; display: flex; gap: 4px; margin: 0 -16px; padding: 0 16px 8px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.ovk-tabs::-webkit-scrollbar { display: none; }
+.ovk-tabs a { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 36px; padding: 6px 14px; border-radius: 999px; color: var(--ovk-muted); font-size: .9rem; font-weight: 650; text-decoration: none; white-space: nowrap; }
+.ovk-tabs a:hover { color: var(--ovk-text); background: var(--ovk-panel-2); }
+.ovk-tabs a[aria-current="page"] { color: var(--ovk-text); background: var(--ovk-panel-2); box-shadow: inset 0 0 0 1px var(--ovk-line); }
+.ovk-tabs .ovk-i { width: 16px; height: 16px; }
+.ovk-tab-n { min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--ovk-panel); color: var(--ovk-muted); font-size: .72rem; font-weight: 800; text-align: center; }
+
+/* ── Lists: rows that read like a phone's (a mark, the name and time on one line, one line under it) ── */
+.ovk-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 8px; }
+.ovk-list-head.ovk-list-head h2 { margin: 0; color: var(--ovk-muted); font-family: inherit; font-size: .76rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.ovk-list-head a { display: inline-flex; align-items: center; min-height: 32px; color: var(--ovk-accent); font-size: .84rem; font-weight: 700; text-decoration: none; }
+/* 44 px to the touch: tab pills (36 px) and list links grow on touch screens and narrow windows. */
+@media (pointer: coarse), (max-width: 759px) { .ovk-tabs a, .ovk-list-head a { min-height: 44px; } }
+.ovk-list { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 14px; padding: 0; border: 1px solid var(--ovk-line); border-radius: var(--ovk-radius); background: var(--ovk-panel); overflow: hidden; }
+.ovk-list--flush { margin: 0; border: 0; border-radius: 0; border-top: 1px solid var(--ovk-line); background: transparent; }
+.ovk-row { margin: 0; color: var(--ovk-text); }
+.ovk-row + .ovk-row { border-top: 1px solid var(--ovk-line); }
+.ovk-row > a, .ovk-row--static { display: flex; align-items: center; gap: 12px; min-height: 56px; box-sizing: border-box; padding: 8px 14px; color: inherit; text-decoration: none; min-width: 0; }
+.ovk-row > a:hover { background: var(--ovk-panel-2); }
+.ovk-row > a:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: -2px; }
+.ovk-row--static { padding-right: 8px; }
+.ovk-row-main { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.ovk-row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ovk-row-top strong { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+.ovk-row-top time, .ovk-row-meta { flex: none; margin-left: auto; color: var(--ovk-muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.ovk-row-sub { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--ovk-muted); font-size: .9rem; }
+.ovk-row-sub > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovk-row--unread .ovk-row-top strong { font-weight: 800; }
+.ovk-row--unread .ovk-row-sub { color: var(--ovk-text); }
+.ovk-row-trail { display: flex; align-items: center; gap: 2px; flex: none; }
+.ovk-row-trail form { display: flex; align-items: center; gap: 2px; margin: 0; }
+.ovk-row-trail select { max-width: 9.5em; padding: 5px 6px; border-radius: 8px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: .86rem; }
+.ovk-mark { --ovk-mark: 40px; flex: none; display: inline-grid; place-items: center; width: var(--ovk-mark); height: var(--ovk-mark); box-sizing: border-box; border-radius: 50%; object-fit: cover; background: hsl(var(--ovk-hue, 215) 45% 38%); color: #fff; font-size: calc(var(--ovk-mark) * .34); font-weight: 800; letter-spacing: .02em; line-height: 1; }
+.ovk-mark--square { border-radius: 28%; }
+.ovk-empty-line { margin: 0 0 14px; padding: 14px; border: 1px dashed var(--ovk-line); border-radius: var(--ovk-radius); color: var(--ovk-muted); }
+
+/* ── Sections (settings groups, a page's parts) and folds ── */
+.ovk-section { margin: 0 0 12px; border: 1px solid var(--ovk-line); border-radius: var(--ovk-radius); background: var(--ovk-panel); overflow: hidden; color: var(--ovk-text); }
+.ovk-section.ovk-section > h2 { display: flex; align-items: center; gap: 6px; margin: 0; padding: 12px 14px 6px; color: var(--ovk-muted); font-family: inherit; font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.ovk-count { color: var(--ovk-text); font-weight: 800; letter-spacing: 0; }
+.ovk-note { margin: 0; padding: 0 14px 10px; color: var(--ovk-muted); font-size: .86rem; }
+.ovk-section > .ovk-form, .ovk-section > form:not(.ovk-find):not(.ovk-inline) { padding: 4px 14px 14px; }
+.ovk-fold { margin: 0 0 10px; border: 1px solid var(--ovk-line); border-radius: var(--ovk-radius); background: var(--ovk-panel); color: var(--ovk-text); }
+.ovk-fold > summary { display: flex; align-items: center; gap: 10px; min-height: 48px; box-sizing: border-box; padding: 10px 14px; cursor: pointer; list-style: none; font-weight: 650; }
+.ovk-fold > summary::-webkit-details-marker { display: none; }
+.ovk-fold > summary > span { flex: 1; min-width: 0; }
+.ovk-fold > summary > .ovk-i { color: var(--ovk-muted); transition: transform .15s; }
+.ovk-fold[open] > summary > .ovk-i { transform: rotate(90deg); }
+.ovk-fold[open] > summary { border-bottom: 1px solid var(--ovk-line); }
+.ovk-fold > summary:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: -2px; border-radius: var(--ovk-radius); }
+.ovk-fold-body { padding: 12px 14px 14px; }
+.ovk-fold-body > :first-child { margin-top: 0; }
+.ovk-fold-body > :last-child { margin-bottom: 0; }
+.ovk-fold--danger > summary { color: var(--ovk-bad); }
+.ovk-more { position: relative; display: inline-block; }
+.ovk-more > summary { list-style: none; }
+.ovk-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; min-width: 210px; padding: 6px; box-sizing: border-box; border-radius: 12px; border: 1px solid var(--ovk-line); background: var(--ovk-panel); box-shadow: 0 14px 32px rgba(0, 0, 0, .4); }
+.ovk-pop form { margin: 0; }
+.ovk-pop-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; box-sizing: border-box; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ovk-text); font: inherit; font-weight: 600; text-align: left; text-decoration: none; cursor: pointer; }
+.ovk-pop-item:hover, .ovk-pop-item:focus-visible { background: var(--ovk-panel-2); outline: none; }
+.ovk-pop-item--danger { color: var(--ovk-bad); }
+
+/* ── Settings rows: what it does on the left, its control on the right ── */
+.ovk-set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; box-sizing: border-box; padding: 8px 14px; border-top: 1px solid var(--ovk-line); color: var(--ovk-text); cursor: pointer; }
+.ovk-section > h2 + .ovk-set-row, .ovk-section > .ovk-note + .ovk-set-row { border-top: 0; }
+div.ovk-set-row { cursor: default; }
+.ovk-set-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.ovk-set-text small { color: var(--ovk-muted); font-size: .8rem; }
+.ovk-set-row select { flex: none; max-width: 52%; margin: 0; padding: 7px 8px; border-radius: 10px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: .9rem; }
+.ovk-set-range input[type=range] { flex: 0 1 45%; min-width: 120px; margin: 0; accent-color: var(--ovk-fill); }
+.ovk-set-chips { flex-wrap: wrap; }
+.ovk-switch { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 44px; height: 26px; margin: 0; padding: 0; border-radius: 999px; border: 0; background: var(--ovk-line); cursor: pointer; transition: background .15s; }
+.ovk-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); transition: transform .15s; }
+.ovk-switch:checked { background: var(--ovk-fill); }
+.ovk-switch:checked::after { transform: translateX(18px); }
+.ovk-switch:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: 2px; }
+.ovk-seg { display: inline-flex; flex: none; gap: 2px; padding: 3px; border-radius: 10px; background: var(--ovk-panel-2); }
+.ovk-seg input, .ovk-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.ovk-seg span { display: block; padding: 6px 12px; border-radius: 8px; color: var(--ovk-muted); font-size: .86rem; font-weight: 650; cursor: pointer; }
+.ovk-seg input:checked + span { background: var(--ovk-fill); color: var(--ovk-on-fill); }
+.ovk-seg input:focus-visible + span, .ovk-chip input:focus-visible + span { outline: 2px solid var(--ovk-accent); outline-offset: 1px; }
+.ovk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ovk-chip span { display: inline-flex; align-items: center; min-height: 32px; box-sizing: border-box; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--ovk-line); color: var(--ovk-muted); font-size: .86rem; font-weight: 650; cursor: pointer; }
+.ovk-chip input:checked + span { border-color: color-mix(in srgb, var(--ovk-accent) 55%, transparent); background: color-mix(in srgb, var(--ovk-accent) 14%, transparent); color: var(--ovk-text); }
+.ovk-save { position: sticky; bottom: var(--ovk-bottom); z-index: 30; margin: 0; padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent, var(--ovk-bg) 35%); }
+.ovk-save .ovk-btn { width: 100%; }
+.ovk-form { display: grid; gap: 12px; margin: 0; }
+.ovk-form label { display: grid; gap: 5px; color: var(--ovk-muted); font-size: .9rem; }
+.ovk-form label.ovk-check { display: flex; align-items: flex-start; gap: 10px; color: var(--ovk-text); font-size: .95rem; }
+.ovk-form input:not([type=checkbox]):not([type=radio]):not([type=range]), .ovk-form select, .ovk-form textarea { width: 100%; box-sizing: border-box; min-height: var(--ovk-tap); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: 1rem; }
+.ovk-form textarea { min-height: 96px; resize: vertical; }
+.ovk-form input:focus-visible, .ovk-form select:focus-visible, .ovk-form textarea:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: 0; border-color: transparent; }
+.ovk-form.ovk-form > p { margin: 0; }
+/* A settings row inside a form stays a row: the label on the left, its control (not stretched) on the right. */
+.ovk-form label.ovk-set-row { display: flex; color: var(--ovk-text); font-size: 1rem; }
+.ovk-form .ovk-set-row select { width: auto; min-height: 0; padding: 7px 8px; font-size: .9rem; }
+.ovk-form .ovk-section { margin: 0; }
+
+/* ── Find (search, add by name) and the dock (a conversation's composer) ── */
+.ovk-find { display: flex; align-items: center; gap: 8px; box-sizing: border-box; margin: 0 0 12px; padding: 4px 4px 4px 14px; border: 1px solid var(--ovk-line); border-radius: 999px; background: var(--ovk-panel); color: var(--ovk-muted); }
+.ovk-find:focus-within { border-color: var(--ovk-accent); }
+.ovk-find--inset { margin: 0 14px 12px; }
+.ovk-find input { flex: 1; min-width: 0; min-height: 38px; margin: 0; padding: 8px 0; border: 0; background: transparent; color: var(--ovk-text); font: inherit; font-size: 1rem; outline: none; -webkit-appearance: none; appearance: none; }
+.ovk-find input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.ovk-find select { flex: none; max-width: 38%; padding: 6px 8px; border: 0; border-radius: 999px; background: var(--ovk-panel-2); color: var(--ovk-text); font: inherit; font-size: .86rem; }
+.ovk-go { display: inline-grid; place-items: center; flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; background: var(--ovk-fill); color: var(--ovk-on-fill); cursor: pointer; }
+.ovk-go .ovk-i { width: 18px; height: 18px; stroke-width: 2.4; }
+.ovk-go--send { width: var(--ovk-tap); height: var(--ovk-tap); }
+.ovk-dock { position: sticky; bottom: var(--ovk-bottom); z-index: 30; display: flex; align-items: flex-end; gap: 6px; margin: 8px -16px 0; padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)); background: color-mix(in srgb, var(--ovk-bg) 92%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.ovk-compose { flex: 1; min-width: 0; display: flex; align-items: flex-end; gap: 8px; margin: 0; }
+.ovk-compose textarea { flex: 1; min-width: 0; min-height: var(--ovk-tap); max-height: 40vh; box-sizing: border-box; margin: 0; padding: 10px 16px; border-radius: 22px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: 1rem; line-height: 1.4; resize: none; field-sizing: content; }
+.ovk-compose textarea:focus-visible { outline: none; border-color: var(--ovk-accent); }
+
+/* ── App pages: the conversation fills the screen between the head and the dock, and only it scrolls ── */
+.ovk-app { display: flex; flex-direction: column; min-height: calc(100dvh - var(--ovk-top) - var(--ovk-bottom)); }
+.ovk-app > .ovk-feed { flex: 1 1 auto; }
+.ovk-feed { min-height: 240px; }
+@supports (height: 100dvh) {
+    .ovk-app--fixed { height: calc(100dvh - var(--ovk-top) - var(--ovk-bottom)); min-height: 0; }
+    .ovk-app--fixed > .ovk-feed { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    .ovk-app--fixed > .ovk-head { position: static; }
+    .ovk-app--fixed > .ovk-dock { position: static; }
+}
+
+/* ── Numbers, empty states, notices, code, sheets ── */
+.ovk-stats { position: relative; display: flex; gap: 8px; margin: 12px -16px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; }
+.ovk-stats::-webkit-scrollbar { display: none; }
+.ovk-stats > div { display: flex; flex-direction: column-reverse; flex: 0 0 auto; min-width: 104px; box-sizing: border-box; padding: 8px 14px; border: 1px solid var(--ovk-line); border-radius: 12px; background: var(--ovk-panel); }
+.ovk-stats dt { margin: 0; color: var(--ovk-muted); font-size: .76rem; line-height: 1.25; }
+.ovk-stats dt a { color: inherit; text-decoration: none; }
+/* A number that is a link: the whole tile is the target (the label's link stretched over it), never an underline. */
+.ovk-stat--link { position: relative; transition: border-color .15s; }
+.ovk-stat--link dt a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.ovk-stat--link:hover { border-color: var(--ovk-accent); }
+.ovk-stat--link dt a:focus-visible { outline: none; }
+.ovk-stat--link:focus-within { outline: 2px solid var(--ovk-accent); outline-offset: -2px; }
+.ovk-stats dd { margin: 0; color: var(--ovk-text); font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.ovk-empty { display: grid; justify-items: center; gap: 8px; margin: 0 0 14px; padding: 24px 16px; border: 1px dashed var(--ovk-line); border-radius: var(--ovk-radius); color: var(--ovk-muted); text-align: center; }
+.ovk-empty > .ovk-i { width: 28px; height: 28px; }
+.ovk-empty.ovk-empty p { margin: 0; max-width: 46ch; }
+.ovk-empty .ovk-empty-title { color: var(--ovk-text); font-weight: 750; }
+.ovk-notice { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--ovk-line); background: var(--ovk-panel); color: var(--ovk-text); font-size: .92rem; }
+.ovk-notice > .ovk-i { margin-top: 2px; }
+.ovk-notice--ok { border-color: color-mix(in srgb, var(--ovk-ok) 45%, transparent); }
+.ovk-notice--ok > .ovk-i { color: var(--ovk-ok); }
+.ovk-notice--error { border-color: color-mix(in srgb, var(--ovk-bad) 50%, transparent); }
+.ovk-notice--error > .ovk-i { color: var(--ovk-bad); }
+.ovk-notice--warn > .ovk-i { color: var(--ovk-warn); }
+.ovk-notice--info > .ovk-i { color: var(--ovk-accent); }
+.ovk-snip { position: relative; }
+.ovk-snip > .ovk-icon-btn { position: absolute; top: 6px; right: 6px; z-index: 1; width: 34px; height: 34px; background: var(--ovk-panel); border-color: var(--ovk-line); }
+.ovk-snip > pre { max-height: 50vh; margin: 0 0 10px; padding: 12px 48px 12px 12px; overflow: auto; border-radius: 10px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font-size: .84rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ovk-sheet { width: min(560px, 100vw); max-width: 100vw; max-height: 85dvh; margin: auto; padding: 0; box-sizing: border-box; border: 1px solid var(--ovk-line); border-radius: 18px; background: var(--ovk-panel); color: var(--ovk-text); overflow: hidden; }
+.ovk-sheet::backdrop { background: rgba(0, 0, 0, .55); }
+.ovk-sheet[open] { display: flex; flex-direction: column; }
+.ovk-sheet-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--ovk-line); }
+.ovk-sheet-head.ovk-sheet-head h2 { flex: 1; margin: 0; font-size: 1.05rem; }
+.ovk-sheet-body { padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px)); overflow-y: auto; }
+
+/* ── Phones (< 600 px): bottom sheets, full-width forms ── */
+
+@media (max-width: 599px) {
+    .ovk-sheet { margin: auto 0 0; width: 100vw; border-radius: 18px 18px 0 0; border-bottom: 0; }
+    .ovk-row > a, .ovk-row--static { padding-left: 12px; }
+    .ovk-head-tools { gap: 0; }
+}
+/* ── Tablets and up (≥ 600 px): numbers in a row, roomier lists ── */
+@media (min-width: 600px) {
+    .ovk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin-left: 0; margin-right: 0; padding: 0; overflow: visible; }
+    .ovk-save .ovk-btn { width: auto; min-width: 200px; }
+    .ovk-dock { margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; }
+}
+/* ── Computers (≥ 1024 px): a side panel beside the content ── */
+.ovk-split { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1024px) {
+    .ovk-split { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+    .ovk-split > .ovk-side { position: sticky; top: calc(var(--ovk-top) + 12px); }
+}
+@media (prefers-reduced-motion: reduce) { .ovk-switch, .ovk-switch::after, .ovk-fold > summary > .ovk-i, .ovk-head, .ovk-btn { transition: none; } }
+@media print { .ovk-head, .ovk-dock, .ovk-save { position: static; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* Touch (4.46.0, the fleet tap audit): small buttons are 44px tall on a touch screen, the find bar's go button reaches
+   44px to a finger and looks the same, and the find bar's field and select are 44px tall. */
+@media (pointer: coarse) {
+    .ovk-btn--small { min-height: 44px; }
+    .ovk-go { position: relative; }
+    .ovk-go::after { content: ''; position: absolute; inset: -3px; }
+    .ovk-find input, .ovk-find select { min-height: 44px; }
+}

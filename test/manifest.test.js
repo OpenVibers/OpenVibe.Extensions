@@ -11,18 +11,37 @@ const { check, done } = require('./helpers/harness');
 
 const DIR = path.join(__dirname, '..', 'browser');
 const ORIGIN = 'https://openvibe.coupons';
+const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat'];
 
 (async () => {
     const { manifest, origin, problems } = auditDir(DIR);
 
-    await check('the shipped manifest passes the audit: activeTab + scripting + storage, one host permission (the API), MV3', async () => {
+    await check('the shipped manifest passes the audit: activeTab + scripting + storage + sidePanel, three OpenVibe host permissions, MV3', async () => {
         assert.deepStrictEqual(problems, []);
         assert.strictEqual(origin, ORIGIN);
-        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'scripting', 'storage']);
-        assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*']);
+        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'scripting', 'sidePanel', 'storage']);
+        assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.chat/*']);
+        assert.strictEqual(manifest.side_panel.default_path, 'panel.html', 'the Dock lives in the side panel');
         for (const k of ['content_scripts', 'background', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
             assert.ok(!(k in manifest), `${k} must not be present`);
         }
+    });
+
+    await check('the side panel is a key in both browsers\' manifests', async () => {
+        const { forTarget } = require('../scripts/pack');
+        const ff = new Map([['manifest.json', Buffer.from(JSON.stringify(manifest))]]);
+        forTarget(ff, 'firefox');
+        const firefox = JSON.parse(ff.get('manifest.json').toString('utf8'));
+        assert.ok(!('side_panel' in firefox), 'Firefox has no Chrome key');
+        assert.strictEqual(firefox.sidebar_action.default_panel, 'panel.html');
+        assert.ok(firefox.permissions.includes('sidebarAction'), 'and its own side-panel permission');
+        assert.ok(!firefox.permissions.includes('sidePanel'), 'not Chrome\'s');
+        const ch = new Map([['manifest.json', Buffer.from(JSON.stringify(manifest))]]);
+        forTarget(ch, 'chrome');
+        const chrome = JSON.parse(ch.get('manifest.json').toString('utf8'));
+        assert.ok(chrome.side_panel, 'Chrome keeps side_panel');
+        assert.ok(!('sidebar_action' in chrome), 'and no Firefox key');
+        assert.ok(chrome.permissions.includes('sidePanel'));
     });
 
     await check('the audit fails if anything widens', async () => {
@@ -52,18 +71,18 @@ const ORIGIN = 'https://openvibe.coupons';
         for (const [i, mutate] of widen.entries()) {
             const m = JSON.parse(JSON.stringify(manifest));
             mutate(m);
-            assert.ok(auditManifest(m, { apiOrigin: ORIGIN }).length > 0, `widening #${i} was not caught: ${mutate}`);
+            assert.ok(auditManifest(m, { apiOrigin: ORIGIN, origins: ORIGINS }).length > 0, `widening #${i} was not caught: ${mutate}`);
         }
     });
 
     await check('the API origin agrees across lib/config.js, host_permissions and the CSP connect-src', async () => {
         const csp = manifest.content_security_policy.extension_pages;
-        assert.match(csp, /connect-src https:\/\/openvibe\.coupons;/);
-        assert.strictEqual(auditManifest(manifest, { apiOrigin: 'https://evil.example.net' }).length > 0, true);
+        assert.match(csp, /connect-src https:\/\/openvibe\.coupons https:\/\/openvibe\.network https:\/\/openvibe\.chat;/);
+        assert.strictEqual(auditManifest(manifest, { apiOrigin: 'https://evil.example.net' }).length > 0, true, 'another origin is caught');
     });
 
     await check('pages load only local scripts: no inline script, no inline handlers, no remote code', async () => {
-        for (const p of ['popup.html', 'options.html']) assert.deepStrictEqual(auditPage(fs.readFileSync(path.join(DIR, p), 'utf8'), p), []);
+        for (const p of ['popup.html', 'options.html', 'panel.html']) assert.deepStrictEqual(auditPage(fs.readFileSync(path.join(DIR, p), 'utf8'), p), []);
         assert.ok(auditPage('<script>alert(1)</script>', 'x').length);
         assert.ok(auditPage('<script src="https://cdn.example.net/x.js"></script>', 'x').length);
         assert.ok(auditPage('<button onclick="x()">', 'x').length);
@@ -71,7 +90,9 @@ const ORIGIN = 'https://openvibe.coupons';
 
     await check('the code never uses cookies, dynamic code or HTML injection; only api.js fetches; only platform.js runs a script in a page', async () => {
         const files = [];
-        (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (p.endsWith('.js')) files.push(p); } })(DIR);
+        // browser/shared/ is the released OpenVibe.Shared Dock, bundled as it is: it is audited in its own
+        // repository (OpenVibe.Shared), not here.
+        (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) { if (e.name !== 'shared') walk(p); } else if (p.endsWith('.js')) files.push(p); } })(DIR);
         const forbidden = [/\binnerHTML\b/, /\bouterHTML\b/, /insertAdjacentHTML/, /document\.write/, /\beval\s*\(/, /new Function\s*\(/, /\bcookies\b/, /document\.cookie/,
             /\bhistory\.(search|getVisits)/, /webRequest/, /storage\.sync/, /sendMessage|onMessageExternal|runtime\.connect/, /XMLHttpRequest/, /importScripts/];
         for (const f of files) {
@@ -79,7 +100,7 @@ const ORIGIN = 'https://openvibe.coupons';
             const src = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"])\/\/.*$/gm, '$1');
             for (const re of forbidden) assert.doesNotMatch(src, re, `${path.relative(DIR, f)} uses ${re}`);
             const rel = path.relative(DIR, f);
-            if (rel !== path.join('lib', 'api.js')) assert.doesNotMatch(src.replace(/fetch: self\.fetch\.bind\(self\)/g, ''), /\bfetch\s*\(/, `${rel} makes a request itself`);
+            if (rel !== path.join('lib', 'api.js') && rel !== path.join('lib', 'network-api.js')) assert.doesNotMatch(src.replace(/fetch: self\.fetch\.bind\(self\)/g, ''), /\bfetch\s*\(/, `${rel} makes a request itself`);
         }
         const tabUse = files.filter((f) => /\btabs\.(query|create|update)\b/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
         assert.deepStrictEqual(tabUse, [path.join('lib', 'platform.js')], 'only the platform wrapper touches tabs (it opens only hand-off pages)');

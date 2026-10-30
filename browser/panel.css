@@ -1,0 +1,79 @@
+/*
+ * The Dock in the side panel: the browser's panel is the frame, so the Dock fills it (no floating
+ * card, no corners, no pill) and keeps the look it has on a site — the same components, the same
+ * tokens, the same tabs.
+ */
+
+:root {
+    /* The Network's default dark theme (the "vibe" theme of the OpenVibe Kit). */
+    --bg-primary: #0a0f1c;
+    --bg-secondary: #101828;
+    --bg-tertiary: #172238;
+    --bg-card: #131c2e;
+    --bg-hover: #1c2a44;
+    --bg-input: #0d1424;
+    --text-primary: #e6edf7;
+    --text-secondary: #96a7c2;
+    --text-muted: #8192ac;
+    --accent: #3b82f6;
+    --accent-light: #60a5fa;
+    --accent-dark: #1d4ed8;
+    --accent-strong: #3472d8;
+    --on-accent: #ffffff;
+    --on-accent-strong: #ffffff;
+    --border: #1f2d47;
+    --border-light: #2c3d5c;
+    --live-red: #ef4444;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #38bdf8;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg-primary: #f5f7fc;
+        --bg-secondary: #eaeff8;
+        --bg-tertiary: #e2e9f4;
+        --bg-card: #ffffff;
+        --bg-hover: #e9eff9;
+        --bg-input: #f1f5fb;
+        --text-primary: #111827;
+        --text-secondary: #3f4a5f;
+        --text-muted: #5b6779;
+        --accent: #2563eb;
+        --accent-light: #60a5fa;
+        --accent-dark: #1d4ed8;
+        --accent-strong: #3472d8;
+        --border: #d9e0ec;
+        --border-light: #e7ecf4;
+        --live-red: #e5484d;
+        --success: #16a34a;
+        --warning: #d97706;
+        --danger: #dc2626;
+        --info: #0284c7;
+    }
+}
+
+html, body { margin: 0; height: 100%; background: var(--bg-primary); color: var(--text-primary); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+body.panel { overflow: hidden; }
+
+/* The Dock, full bleed: the panel is the frame. */
+.ovdk, .ovdk[data-corner] {
+    position: static !important;
+    inset: auto !important;
+    left: auto !important; top: auto !important; right: auto !important; bottom: auto !important;
+    width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important;
+    border-radius: 0 !important; border-bottom: 0 !important;
+    box-shadow: none !important; padding-bottom: 0 !important;
+}
+.ovdk-pill { display: none !important; }
+.ovdk-size { display: none !important; }
+/* The panel is the browser's: it has no window of its own to pop out into, and nothing to close. */
+.ovdk [data-act="pop"], .ovdk [data-act="close"] { display: none !important; }
+
+#gate { padding: 20px; }
+#gate h1 { font-size: 16px; margin: 0 0 8px; }
+#gate p { margin: 0 0 12px; color: var(--text-secondary); }
+#gate button { font: inherit; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--accent-strong); color: var(--on-accent-strong); cursor: pointer; }

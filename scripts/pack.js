@@ -75,9 +75,17 @@ function listFiles(dir, base = dir) {
 /** The store manifest for one browser: only drops the other browser's key (the audit runs on the full one). */
 function forTarget(files, target) {
     const m = JSON.parse(files.get('manifest.json'));
-    if (target === 'chrome') delete m.browser_specific_settings;
-    else if (target === 'firefox') delete m.minimum_chrome_version;
-    else throw new Error('target must be chrome or firefox');
+    if (target === 'chrome') {
+        delete m.browser_specific_settings;
+        delete m.sidebar_action;
+        m.permissions = (m.permissions || []).filter((p) => p !== 'sidebarAction');
+    } else if (target === 'firefox') {
+        delete m.minimum_chrome_version;
+        delete m.side_panel;
+        m.permissions = (m.permissions || []).filter((p) => p !== 'sidePanel');
+        m.permissions.push('sidebarAction');
+        m.sidebar_action = { default_panel: 'panel.html', open_in_sidebar: true };
+    } else throw new Error('target must be chrome or firefox');
     files.set('manifest.json', Buffer.from(JSON.stringify(m, null, 2) + '\n'));
 }
 
@@ -131,4 +139,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { build, zip, crc32 };
+module.exports = { build, zip, crc32, forTarget };

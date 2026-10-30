@@ -45,7 +45,7 @@ function unzip(buf) {
         const src = path.join(__dirname, '..', 'browser');
         for (const [name, data] of files) assert.ok(data.equals(fs.readFileSync(path.join(src, name))), name);
         assert.ok(files.has('manifest.json') && files.has('popup.html') && files.has('lib/api.js') && files.has('icons/icon-128.png'));
-        assert.deepStrictEqual(auditManifest(JSON.parse(files.get('manifest.json')), { apiOrigin: 'https://openvibe.coupons' }), []);
+        assert.deepStrictEqual(auditManifest(JSON.parse(files.get('manifest.json')), { apiOrigin: 'https://openvibe.coupons', origins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat'] }), []);
     });
 
     await check('the build is reproducible', async () => {
@@ -59,8 +59,8 @@ function unzip(buf) {
         assert.match(r.out, /-dev\.zip$/);
         const files = unzip(fs.readFileSync(r.out));
         const m = JSON.parse(files.get('manifest.json'));
-        assert.deepStrictEqual(m.host_permissions, ['http://localhost:4850/*']);
-        assert.match(m.content_security_policy.extension_pages, /connect-src http:\/\/localhost:4850;/);
+        assert.deepStrictEqual(m.host_permissions, ['http://localhost:4850/*', 'https://openvibe.network/*', 'https://openvibe.chat/*']);
+        assert.match(m.content_security_policy.extension_pages, /connect-src http:\/\/localhost:4850 https:\/\/openvibe\.network https:\/\/openvibe\.chat;/);
         assert.match(m.name, /development/);
         assert.match(files.get('lib/config.js').toString(), /API_ORIGIN: 'http:\/\/localhost:4850'/);
         assert.doesNotMatch(files.get('manifest.json').toString() + files.get('lib/config.js').toString(), /openvibe\.coupons\//);
@@ -76,6 +76,14 @@ function unzip(buf) {
             for (const [name, data] of files) if (name !== 'manifest.json') assert.ok(data.equals(fs.readFileSync(path.join(src, name))), name);
             const want = { ...full };
             delete want[dropped];
+            if (target === 'chrome') {
+                delete want.sidebar_action;
+                want.permissions = want.permissions.filter((p) => p !== 'sidebarAction');
+            } else {
+                delete want.side_panel;
+                want.permissions = want.permissions.filter((p) => p !== 'sidePanel').concat(['sidebarAction']);
+                want.sidebar_action = { default_panel: 'panel.html', open_in_sidebar: true };
+            }
             assert.deepStrictEqual(JSON.parse(files.get('manifest.json')), want);
             assert.ok(fs.readFileSync(build({ outDir: tmp, target }).out).equals(fs.readFileSync(r.out)));
         }

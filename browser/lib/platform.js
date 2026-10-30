@@ -8,6 +8,9 @@
  *                           tabs.create needs no permission
  *   storage.getToken/setToken/clearToken   the optional cpx_ install token, in storage.local
  *                           (never storage.sync: it stays on this device)
+ *   storage.getNetworkToken/setNetworkToken/clearNetworkToken
+ *                           the person's OpenVibe sign-in for the Dock in the side panel, also in
+ *                           storage.local
  *   permissions.hasApi/requestApi          the host permission for the API origin (Firefox
  *                           lets people withhold it; reporting needs it)
  *   scripting.tryCodes(tabId, codes)       when the person presses "Try these codes on this page": inject
@@ -28,7 +31,7 @@
     'use strict';
 
     function createPlatform(ext, config) {
-        const origins = [config.API_ORIGIN + '/*'];
+        const origins = [config.API_ORIGIN + '/*', config.NETWORK_ORIGIN + '/*', config.CHAT_ORIGIN + '/*'];
         const call = function (fn, thisArg, args) {
             // chrome.* in MV3 and browser.* both return promises.
             return fn.apply(thisArg, args);
@@ -84,6 +87,21 @@
                     await call(ext.storage.local.set, ext.storage.local, [o]);
                 },
                 async clearToken() { await call(ext.storage.local.remove, ext.storage.local, [config.TOKEN_KEY]); },
+                // The person's own OpenVibe sign-in, for the Dock in the side panel. It is the Network's own
+                // token (the one every OpenVibe site uses), not a new kind of credential, and it stays on
+                // this device like the install token.
+                async getNetworkToken() {
+                    const out = await call(ext.storage.local.get, ext.storage.local, [config.NETWORK_TOKEN_KEY]);
+                    const t = out && out[config.NETWORK_TOKEN_KEY];
+                    return typeof t === 'string' && t.length >= 20 ? t : null;
+                },
+                async setNetworkToken(token) {
+                    if (typeof token !== 'string' || token.length < 20) throw new TypeError('that is not an OpenVibe.Network token');
+                    const o = {};
+                    o[config.NETWORK_TOKEN_KEY] = token;
+                    await call(ext.storage.local.set, ext.storage.local, [o]);
+                },
+                async clearNetworkToken() { await call(ext.storage.local.remove, ext.storage.local, [config.NETWORK_TOKEN_KEY]); },
             },
             permissions: {
                 async hasApi() {
