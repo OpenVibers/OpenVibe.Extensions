@@ -3,16 +3,21 @@
  * The permission audit for browser/manifest.json. test/manifest.test.js runs it, and so does
  * scripts/pack.js before it writes a zip. It fails when anything widens:
  *
- *   permissions            exactly activeTab + scripting + storage (scripting runs lib/autoapply.js or lib/rating.js in the
- *                          active tab only, when the person presses "Try these codes on this page" or "Save its rating to
- *                          OpenVibe Reviews": activeTab is the only host access)
- *   host_permissions       exactly <API origin>/*
+ *   permissions            exactly activeTab + scripting + storage, plus sidePanel in the Chrome build
+ *                          (scripting runs lib/autoapply.js or lib/rating.js in the active tab only, when the
+ *                          person presses "Try these codes on this page" or "Save its rating to OpenVibe
+ *                          Reviews": activeTab is the only host access; Firefox's sidebar_action, the
+ *                          side panel there, needs no permission of its own)
+ *   host_permissions       exactly the API origin, the Network origin and the Chat origin, all three
+ *                          https://openvibe.<tld> sites (the coupon API, the Dock's state, the Dock's
+ *                          Chats tab)
  *   forbidden keys         content_scripts, background, web_accessible_resources,
  *                          externally_connectable, optional_permissions, optional_host_permissions,
  *                          declarative_net_request, chrome_url_overrides, devtools_page, sandbox,
- *                          side_panel, omnibox, … (anything not on the allow-list of keys)
- *   CSP                    script-src 'self' only, connect-src only the API origin, no unsafe-*
- *   pages                  popup/options HTML load only local scripts, no inline script
+ *                          omnibox, … (anything not on the allow-list of keys; the side panel's own keys,
+ *                          side_panel and sidebar_action, are on it)
+ *   CSP                    script-src 'self' only, connect-src only the OpenVibe origins, no unsafe-*
+ *   pages                  popup/options/panel HTML load only local scripts, no inline script
  *   config                 lib/config.js API_ORIGIN equals the host permission's origin
  *   hand-offs              lib/config.js HANDOFF_ORIGINS are https://openvibe.<tld> sites only (the
  *                          tabs the Companion may open when you press a button; never requested)
