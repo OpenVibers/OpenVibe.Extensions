@@ -79,12 +79,12 @@ function forTarget(files, target) {
         delete m.browser_specific_settings;
         delete m.sidebar_action;
         m.permissions = (m.permissions || []).filter((p) => p !== 'sidebarAction');
+        m.permissions.push('sidePanel');
+        m.side_panel = { default_path: 'panel.html' };
     } else if (target === 'firefox') {
         delete m.minimum_chrome_version;
         delete m.side_panel;
         m.permissions = (m.permissions || []).filter((p) => p !== 'sidePanel');
-        m.permissions.push('sidebarAction');
-        m.sidebar_action = { default_panel: 'panel.html', open_in_sidebar: true };
     } else throw new Error('target must be chrome or firefox');
     files.set('manifest.json', Buffer.from(JSON.stringify(m, null, 2) + '\n'));
 }

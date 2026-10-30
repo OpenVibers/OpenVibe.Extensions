@@ -20,7 +20,7 @@
         "activeTab",
         "scripting",
         "storage",
-        "sidePanel"
+        "sidePanel (Chrome only; Firefox needs no permission for sidebar_action)"
       ],
       "hostPermissions": [
         "https://openvibe.coupons/*",

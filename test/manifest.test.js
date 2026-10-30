@@ -19,9 +19,9 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
     await check('the shipped manifest passes the audit: activeTab + scripting + storage + sidePanel, three OpenVibe host permissions, MV3', async () => {
         assert.deepStrictEqual(problems, []);
         assert.strictEqual(origin, ORIGIN);
-        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'scripting', 'sidePanel', 'storage']);
+        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'scripting', 'storage']);
         assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.chat/*']);
-        assert.strictEqual(manifest.side_panel.default_path, 'panel.html', 'the Dock lives in the side panel');
+        assert.strictEqual(manifest.sidebar_action.default_panel, 'panel.html', 'the Dock lives in the side panel');
         for (const k of ['content_scripts', 'background', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
             assert.ok(!(k in manifest), `${k} must not be present`);
         }
@@ -34,14 +34,14 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
         const firefox = JSON.parse(ff.get('manifest.json').toString('utf8'));
         assert.ok(!('side_panel' in firefox), 'Firefox has no Chrome key');
         assert.strictEqual(firefox.sidebar_action.default_panel, 'panel.html');
-        assert.ok(firefox.permissions.includes('sidebarAction'), 'and its own side-panel permission');
-        assert.ok(!firefox.permissions.includes('sidePanel'), 'not Chrome\'s');
+        assert.ok(!firefox.permissions.includes('sidePanel'), 'Firefox needs no side-panel permission');
         const ch = new Map([['manifest.json', Buffer.from(JSON.stringify(manifest))]]);
         forTarget(ch, 'chrome');
         const chrome = JSON.parse(ch.get('manifest.json').toString('utf8'));
-        assert.ok(chrome.side_panel, 'Chrome keeps side_panel');
+        assert.ok(chrome.side_panel, 'Chrome gets side_panel');
         assert.ok(!('sidebar_action' in chrome), 'and no Firefox key');
-        assert.ok(chrome.permissions.includes('sidePanel'));
+        assert.ok(chrome.permissions.includes('sidePanel'), 'Chrome asks for its side-panel permission');
+        assert.ok(!chrome.permissions.includes('sidebarAction'));
     });
 
     await check('the audit fails if anything widens', async () => {

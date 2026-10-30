@@ -34,11 +34,11 @@ function auditManifest(m, { apiOrigin, origins } = {}) {
     for (const k of Object.keys(m)) if (!ALLOWED_KEYS.has(k)) problems.push(`manifest key "${k}" is not allowed`);
     const perms = Array.isArray(m.permissions) ? m.permissions : [];
     const extra = perms.filter((p) => !BASE_PERMISSIONS.includes(p));
-    if (perms.length !== BASE_PERMISSIONS.length + 1 || !BASE_PERMISSIONS.every((p) => perms.includes(p))) {
-        problems.push(`permissions must be exactly ${BASE_PERMISSIONS.join(', ')} plus one side-panel permission (got ${perms.join(', ') || 'none'})`);
+    if (perms.length < BASE_PERMISSIONS.length || !BASE_PERMISSIONS.every((p) => perms.includes(p))) {
+        problems.push(`permissions must be exactly ${BASE_PERMISSIONS.join(', ')} (got ${perms.join(', ') || 'none'})`);
     }
-    if (extra.length !== 1 || !SIDE_PERMISSIONS.includes(extra[0])) {
-        problems.push(`the only extra permission may be sidePanel (sidebarAction on Firefox) (got ${extra.join(', ') || 'none'})`);
+    if (extra.length > 1 || extra.some((p) => !SIDE_PERMISSIONS.includes(p))) {
+        problems.push(`the only extra permission may be sidePanel (Chrome) (got ${extra.join(', ') || 'none'})`);
     }
     const hosts = Array.isArray(m.host_permissions) ? m.host_permissions : [];
     const want = os.map((o) => o + '/*').sort();

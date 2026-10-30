@@ -78,11 +78,11 @@ function unzip(buf) {
             delete want[dropped];
             if (target === 'chrome') {
                 delete want.sidebar_action;
-                want.permissions = want.permissions.filter((p) => p !== 'sidebarAction');
+                want.permissions = want.permissions.filter((p) => p !== 'sidebarAction').concat(['sidePanel']);
+                want.side_panel = { default_path: 'panel.html' };
             } else {
                 delete want.side_panel;
-                want.permissions = want.permissions.filter((p) => p !== 'sidePanel').concat(['sidebarAction']);
-                want.sidebar_action = { default_panel: 'panel.html', open_in_sidebar: true };
+                want.permissions = want.permissions.filter((p) => p !== 'sidePanel');
             }
             assert.deepStrictEqual(JSON.parse(files.get('manifest.json')), want);
             assert.ok(fs.readFileSync(build({ outDir: tmp, target }).out).equals(fs.readFileSync(r.out)));
