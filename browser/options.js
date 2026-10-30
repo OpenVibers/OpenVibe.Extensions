@@ -8,7 +8,10 @@
     const config = self.OVConfig;
     const platform = self.OVPlatform.createPlatform(ext, config);
     const api = self.OVApi.createApiClient({ origin: config.API_ORIGIN, fetch: self.fetch.bind(self), getToken: platform.storage.getToken, timeoutMs: config.TIMEOUT_MS });
+    const net = self.OVNetwork.createNetworkClient({ origin: config.NETWORK_ORIGIN, fetch: self.fetch.bind(self), getToken: platform.storage.getNetworkToken, timeoutMs: config.TIMEOUT_MS });
     const state = document.getElementById('state');
+    const networkState = document.getElementById('network-state');
+    const networkInput = document.getElementById('network-token');
     const input = document.getElementById('token');
     const permissionRow = document.getElementById('permission-row');
     document.getElementById('connect-link').href = config.API_ORIGIN + config.CONNECT_PATH;
@@ -34,6 +37,31 @@
         }
     });
 
+    async function refreshNetwork() {
+        const token = await platform.storage.getNetworkToken();
+        networkState.textContent = token ? 'Connected (the Dock in the side panel works).' : 'Not connected: the side panel asks for your OpenVibe sign-in.';
+    }
+
+    document.getElementById('network-form').addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const token = networkInput.value.trim();
+        if (token.length < 20) { networkState.textContent = 'That does not look like an OpenVibe token.'; return; }
+        networkState.textContent = 'Checking…';
+        try {
+            if (!(await net.check(token))) { networkState.textContent = 'openvibe.network did not accept that token.'; return; }
+            await platform.storage.setNetworkToken(token);
+            networkInput.value = '';
+            await refreshNetwork();
+        } catch (e) {
+            networkState.textContent = 'Could not reach openvibe.network. The token was not saved.';
+        }
+    });
+
+    document.getElementById('network-disconnect').addEventListener('click', async function () {
+        await platform.storage.clearNetworkToken();
+        await refreshNetwork();
+    });
+
     document.getElementById('disconnect').addEventListener('click', async function () {
         await platform.storage.clearToken();
         await refresh();
@@ -45,4 +73,5 @@
     });
 
     refresh();
+    refreshNetwork();
 })();

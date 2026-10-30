@@ -26,6 +26,12 @@
         FOOD_ORIGIN: 'https://openvibe.food',
         REVIEWS_ORIGIN: 'https://openvibe.reviews',
         HANDOFF_ORIGINS: Object.freeze(['https://openvibe.rent', 'https://openvibe.watch', 'https://openvibe.food', 'https://openvibe.reviews']),
+        // NETWORK_ORIGIN is where the Dock's state lives (GET/PUT /api/v1/me/dock) and CHAT_ORIGIN where the
+        // Dock's Chats tab reads the person's conversations from. Both are OpenVibe's own, and the only
+        // origins the side panel may reach besides the API origin.
+        NETWORK_ORIGIN: 'https://openvibe.network',
+        CHAT_ORIGIN: 'https://openvibe.chat',
+        NETWORK_TOKEN_KEY: 'networkToken',
         MAX_TRIES: 10,
         CONNECT_PATH: '/connect-extension',
         TOKEN_KEY: 'installToken',

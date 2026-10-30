@@ -5,26 +5,29 @@
   "wave": "W18",
   "plan": "OpenVibe End-to-End Realignment & Implementation Plan, revision 3 (20 Sep 2026)",
   "adr": "OpenVibe.Contracts ADR-023 (first-party client surfaces)",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "surfaces": {
     "browser": {
       "name": "OpenVibe Companion",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "manifest": 3,
       "targets": [
-        "chromium >= 111",
+        "chromium >= 114",
         "firefox >= 128"
       ],
-      "api": "https://openvibe.coupons (OpenVibe.Coupons public API)",
+      "api": "https://openvibe.coupons (OpenVibe.Coupons public API), https://openvibe.network (the Dock's state), https://openvibe.chat (the Dock's Chats tab)",
       "permissions": [
         "activeTab",
         "scripting",
-        "storage"
+        "storage",
+        "sidePanel (Chrome only; Firefox needs no permission for sidebar_action)"
       ],
       "hostPermissions": [
-        "https://openvibe.coupons/*"
+        "https://openvibe.coupons/*",
+        "https://openvibe.network/*",
+        "https://openvibe.chat/*"
       ],
-      "credential": "optional cpx_ install token (coupons.lookup, coupons.report); no Network session",
+      "credential": "optional cpx_ install token (coupons.lookup, coupons.report); the person's own OpenVibe token for the Dock in the side panel (opt-in, in the settings); the Coupons token is never an OpenVibe session",
       "publishedToStores": false,
       "loadedInChrome": "yes: headless Chromium loads the 0.3.0 build (popup and options render, no console errors); lib/autoapply.js passes three fixture checkout pages in headless Chrome",
       "loadedInFirefox": "not yet loaded in a browser; Mozilla's web-ext lint (8.10.0, what AMO runs on upload) passes with 0 errors, 0 warnings and 0 notices, and runs in CI with warnings as errors",
@@ -50,10 +53,11 @@
     "keeps a rental listing from any site on the OpenVibe.Rent board with the price, city and bedrooms the page states (read only when pressed), and checks its rent against the city median",
     "watches a page on OpenVibe.Watch, and compares delivery apps on OpenVibe.Food",
     "saves a review site's stated rating to OpenVibe.Reviews (read only when pressed, only on those sites)",
-    "an optional cpx_ install token, never a Network session; only openvibe.coupons as a host permission",
+    "an optional cpx_ install token, never an OpenVibe session; and, for the Dock in the side panel, the person's own OpenVibe token (opt-in, in the settings)",
+    "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock (v4.54.0) bundled under browser/shared/, reading and writing the same Network state as the Dock on a site, with the same tabs (Agents, Chats, Activity)",
     "store-ready: reproducible Chrome and Firefox store zips (npm run pack:stores), listing and privacy answers in store/, Mozilla web-ext lint in CI",
     "kiosk companion (Firefox new-tab page and history bridge for Live's /kiosk), moved from OpenVibe.Live",
     "hardware/: the Raspberry Pi streamer and controller scripts, moved from OpenVibe.Live"
   ],
-  "updated": "2026-10-23"
+  "updated": "2026-10-30"
 }

@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "OpenVibe Companion",
   "short_name": "OpenVibe",
-  "version": "0.6.0",
-  "description": "Coupon codes for the shop you are on, tried in its coupon box when you ask; the same restaurant on every delivery app; a review site's rating saved to OpenVibe.Reviews; and one click to keep a rental listing on your OpenVibe.Rent board or watch a page. Reads the tab only when you open it.",
+  "version": "0.7.0",
+  "description": "Coupon codes for the shop you are on, tried in its coupon box when you ask; the same restaurant on every delivery app; a review site's rating saved to OpenVibe.Reviews; and one click to keep a rental listing on your OpenVibe.Rent board or watch a page. The OpenVibe Dock sits in the side panel, on every site. Reads the tab only when you open it.",
   "homepage_url": "https://github.com/OpenVibers/OpenVibe.Extensions",
   "author": "OpenVibers",
   "icons": {
@@ -24,18 +24,24 @@
     "page": "options.html",
     "open_in_tab": false
   },
+  "sidebar_action": {
+    "default_panel": "panel.html",
+    "open_in_sidebar": true
+  },
   "permissions": [
     "activeTab",
     "scripting",
     "storage"
   ],
   "host_permissions": [
-    "https://openvibe.coupons/*"
+    "https://openvibe.coupons/*",
+    "https://openvibe.network/*",
+    "https://openvibe.chat/*"
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://openvibe.coupons; object-src 'none'; base-uri 'none'"
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://openvibe.coupons https://openvibe.network https://openvibe.chat; object-src 'none'; base-uri 'none'"
   },
-  "minimum_chrome_version": "111",
+  "minimum_chrome_version": "114",
   "browser_specific_settings": {
     "gecko": {
       "id": "companion@openvibe.network",
