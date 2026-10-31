@@ -1,0 +1,8 @@
+# The Chrome manifest key is the extension's PUBLIC key. It fixes the extension id so the exact
+# chromiumapp.org redirect can be registered; the private key is not in this repository. Gitleaks'
+# generic-api-key rule sees the base64 blob, so this allowlist is narrow: this file AND this value.
+[[allowlists]]
+description = "Chrome extension public key in browser/manifest.json (no private key is stored)"
+paths = ['''browser/manifest\.json''']
+regexTarget = "secret"
+regexes = ['''MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqVJohdlaysL2HgSsj2Fsd8PxPvXJkZHjEvNyGSYNSEpZBoIeZd7Cm7xznGVikDBbe7WseaNLt\+HheX4WhN94jU/FrS2016AqQG9NTHoymJR8XSrPPDyhc85EUpICOFwqfFsSOykzaRyHZVcrvoepYwntwFjWdt1ul4VozwkqKovZoKUgCn398aNvZ6AH/J0xb0xWMiOiL9CvUWN/jK4wv0ShnJevpmyBBHL273CkQvfMS3VUBvBjq3seMU8BAHkE5RI3c2y/MRdjwYGsCoMU6MPYwt46PQZ0S8SPnFFozJndkpoqc/ue9oXhd77b12GKlJ1BPhHgn8BSx4IAvjeL1wIDAQAB''']

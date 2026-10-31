@@ -42,6 +42,19 @@ function fakeDock() {
     return dock;
 }
 
+/** The OAuth auth surface the panel uses; `mode:'none'` is the signed-out gate. */
+function fakeAuth({ mode = 'oauth', token = TOKEN } = {}) {
+    const auth = {
+        signIns: 0,
+        status: async () => ({ mode, account: mode === 'oauth' ? { username: 'ada' } : null }),
+        scopes: async () => (mode === 'oauth' ? ['dock', 'activity', 'chat.read'] : null),
+        account: async () => (mode === 'oauth' ? { username: 'ada' } : null),
+        accessToken: async () => { if (mode === 'none') throw Object.assign(new Error('auth required'), { code: 'auth.required' }); return token; },
+        signIn: async () => { auth.signIns++; mode = 'oauth'; },
+    };
+    return auth;
+}
+
 (async () => {
     const net1 = await startNetwork();
     try {
@@ -49,11 +62,13 @@ function fakeDock() {
             const doc = fakeDoc();
             const dock = fakeDock();
             const net = createNetworkClient({ origin: net1.origin, fetch: (...a) => fetch(...a), getToken: async () => TOKEN });
-            const panel = createPanel({ doc, config: { NETWORK_ORIGIN: 'https://openvibe.network', CHAT_ORIGIN: 'https://openvibe.chat' }, platform: { storage: { getNetworkToken: async () => TOKEN } }, net, dock, sibling: (n) => 'chrome-extension://abc/shared/' + n });
+            const panel = createPanel({ doc, config: { NETWORK_ORIGIN: 'https://openvibe.network', CHAT_ORIGIN: 'https://openvibe.chat' }, platform: { storage: { getNetworkToken: async () => null } }, auth: fakeAuth(), net, dock, sibling: (n) => 'chrome-extension://abc/shared/' + n });
             const out = await panel.start();
             assert.strictEqual(out.mounted, true, 'the Dock is mounted');
             assert.strictEqual(dock.opened, 1, 'and opened');
-            assert.strictEqual(dock.mounted.token, TOKEN, "with the person's sign-in");
+            assert.strictEqual(await dock.mounted.token(), TOKEN, "with the person's sign-in");
+            assert.deepStrictEqual(dock.mounted.scopes, ['dock', 'activity', 'chat.read'], 'read-only scopes');
+            assert.strictEqual(dock.mounted.me, 'ada', 'the account name');
             assert.strictEqual(dock.mounted.apiBase, 'https://openvibe.network', "the Network, where the Dock's state is");
             assert.strictEqual(dock.mounted.chatBase, 'https://openvibe.chat', 'and Chat, where the Chats tab reads');
             assert.strictEqual(dock.mounted.sibling('dock.js'), 'chrome-extension://abc/shared/dock.js', 'the bundled Dock, from this extension');
@@ -65,12 +80,13 @@ function fakeDock() {
             const doc = fakeDoc();
             const dock = fakeDock();
             const net = createNetworkClient({ origin: net1.origin, fetch: (...a) => fetch(...a), getToken: async () => null });
-            const panel = createPanel({ doc, config: { NETWORK_ORIGIN: 'https://openvibe.network', CHAT_ORIGIN: 'https://openvibe.chat' }, platform: { storage: { getNetworkToken: async () => null } }, net, dock });
+            const panel = createPanel({ doc, config: { NETWORK_ORIGIN: 'https://openvibe.network', CHAT_ORIGIN: 'https://openvibe.chat' }, platform: { storage: { getNetworkToken: async () => null } }, auth: fakeAuth({ mode: 'none' }), net, dock });
             const out = await panel.start();
             assert.strictEqual(out.mounted, false, 'no Dock without a sign-in');
             assert.strictEqual(doc.nodes.gate.hidden, false, 'the gate is shown');
             assert.match(doc.nodes['gate-title'].textContent, /OpenVibe\.Network/);
             assert.strictEqual(doc.nodes['gate-button'].hidden, false, 'with the way to fix it');
+            assert.strictEqual(doc.nodes['gate-button'].textContent, 'Sign in');
         });
 
         await check('a sign-in the Network refuses is not used', async () => {
@@ -78,11 +94,27 @@ function fakeDock() {
             const dock = fakeDock();
             const bad = 'wrong_token_' + 'y'.repeat(40);
             const net = createNetworkClient({ origin: net1.origin, fetch: (...a) => fetch(...a), getToken: async () => bad });
-            const panel = createPanel({ doc, config: { NETWORK_ORIGIN: 'https://openvibe.network', CHAT_ORIGIN: 'https://openvibe.chat' }, platform: { storage: { getNetworkToken: async () => bad } }, net, dock });
+            const panel = createPanel({ doc, config: { NETWORK_ORIGIN: 'https://openvibe.network', CHAT_ORIGIN: 'https://openvibe.chat' }, platform: { storage: { getNetworkToken: async () => null } }, auth: fakeAuth({ token: bad }), net, dock });
             const out = await panel.start();
             assert.strictEqual(out.mounted, false, 'no Dock with a sign-in the Network refused');
             assert.strictEqual(doc.nodes.gate.hidden, false, 'the gate says so');
             assert.match(doc.nodes['gate-title'].textContent, /said no/);
+        });
+
+        await check('the gate button starts the one-click sign-in and mounts after it', async () => {
+            const doc = fakeDoc();
+            const dock = fakeDock();
+            const auth = fakeAuth({ mode: 'none' });
+            const net = createNetworkClient({ origin: net1.origin, fetch: (...a) => fetch(...a), getToken: async () => TOKEN });
+            const panel = createPanel({ doc, config: { NETWORK_ORIGIN: 'https://openvibe.network', CHAT_ORIGIN: 'https://openvibe.chat' }, platform: { storage: {} }, auth, net, dock });
+            await panel.start();
+            doc.nodes['gate-button'].onclick();
+            // The click handler is async; wait until the grant is "connected" and the Dock mounted.
+            const start = Date.now();
+            while (!dock.mounted && Date.now() - start < 2000) await new Promise((r) => setTimeout(r, 20));
+            assert.strictEqual(auth.signIns, 1, 'the button starts the OAuth flow');
+            assert.strictEqual(dock.opened, 1, 'and the Dock mounts');
+            assert.strictEqual(doc.nodes.gate.hidden, true);
         });
     } finally {
         net1.close();

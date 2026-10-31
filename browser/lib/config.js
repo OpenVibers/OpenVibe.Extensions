@@ -31,6 +31,21 @@
         // origins the side panel may reach besides the API origin.
         NETWORK_ORIGIN: 'https://openvibe.network',
         CHAT_ORIGIN: 'https://openvibe.chat',
+        // One-click Dock sign-in (OAuth public client, no secret). The redirect URI is the browser's own
+        // extension URL; the exact values are also in the Network client row. A build whose runtime
+        // identity.getRedirectURL() is not one of these refuses to sign in rather than send an
+        // unregistered redirect.
+        OAUTH_CLIENT_ID: 'companion',
+        OAUTH_SCOPES: Object.freeze(['dock', 'activity', 'chat.read']),
+        OAUTH_REDIRECT_URIS: Object.freeze([
+            'https://bjcjcfcecpkkmfndegkjekoipdmbgakd.chromiumapp.org/',
+            'https://bb6593a68b1dcfbb7acd9650f04a169f4c5b57a0.extensions.allizom.org/',
+        ]),
+        // The OAuth grant: access in storage.session (memory), refresh in storage.local (this device).
+        DOCK_ACCESS_KEY: 'dockAccess',
+        DOCK_REFRESH_KEY: 'dockRefresh',
+        DOCK_ACCOUNT_KEY: 'dockAccount',
+        // Kept for the 0.7.0 pasted-token path until a later release removes it (see README).
         NETWORK_TOKEN_KEY: 'networkToken',
         MAX_TRIES: 10,
         CONNECT_PATH: '/connect-extension',

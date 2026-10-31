@@ -32,6 +32,7 @@
 
     function createPlatform(ext, config) {
         const origins = [config.API_ORIGIN + '/*', config.NETWORK_ORIGIN + '/*', config.CHAT_ORIGIN + '/*'];
+        const sessionMemory = new Map();
         const call = function (fn, thisArg, args) {
             // chrome.* in MV3 and browser.* both return promises.
             return fn.apply(thisArg, args);
@@ -74,7 +75,40 @@
                     return out && out[0] ? out[0].result : null;
                 },
             },
+            identity: {
+                /** The browser's own redirect URL for this extension (Chrome chromiumapp.org / Firefox extensions.allizom.org). */
+                getRedirectURL() {
+                    if (!ext.identity || typeof ext.identity.getRedirectURL !== 'function') throw new TypeError('this browser has no identity API');
+                    return ext.identity.getRedirectURL();
+                },
+                /** Open the Network's authorize page; resolves with its final redirect URL. */
+                launchWebAuthFlow(opts) {
+                    if (!ext.identity || typeof ext.identity.launchWebAuthFlow !== 'function') throw new TypeError('this browser has no identity API');
+                    return call(ext.identity.launchWebAuthFlow, ext.identity, [opts]);
+                },
+            },
             storage: {
+                // Generic helpers: the OAuth access token is in storage.session (memory, per browser run),
+                // the refresh token is in storage.local (this device). If a browser has no session area,
+                // the access token stays in a module map rather than falling back to disk.
+                async getSession(key) {
+                    if (ext.storage.session) { const out = await call(ext.storage.session.get, ext.storage.session, [key]); return out ? out[key] : null; }
+                    return sessionMemory.has(key) ? sessionMemory.get(key) : null;
+                },
+                async setSession(values) {
+                    if (ext.storage.session) return call(ext.storage.session.set, ext.storage.session, [values]);
+                    for (const k of Object.keys(values)) sessionMemory.set(k, values[k]);
+                },
+                async removeSession(keys) {
+                    if (ext.storage.session) return call(ext.storage.session.remove, ext.storage.session, [keys]);
+                    for (const k of [].concat(keys)) sessionMemory.delete(k);
+                },
+                async getLocal(key) {
+                    const out = await call(ext.storage.local.get, ext.storage.local, [key]);
+                    return out ? out[key] : null;
+                },
+                async setLocal(values) { await call(ext.storage.local.set, ext.storage.local, [values]); },
+                async removeLocal(keys) { await call(ext.storage.local.remove, ext.storage.local, [keys]); },
                 async getToken() {
                     const out = await call(ext.storage.local.get, ext.storage.local, [config.TOKEN_KEY]);
                     const t = out && out[config.TOKEN_KEY];

@@ -16,15 +16,26 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
 (async () => {
     const { manifest, origin, problems } = auditDir(DIR);
 
-    await check('the shipped manifest passes the audit: activeTab + scripting + storage + sidePanel, three OpenVibe host permissions, MV3', async () => {
+    await check('the shipped manifest passes the audit: activeTab + identity + scripting + storage + sidePanel, three OpenVibe host permissions, MV3', async () => {
         assert.deepStrictEqual(problems, []);
         assert.strictEqual(origin, ORIGIN);
-        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'scripting', 'storage']);
+        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'identity', 'scripting', 'storage']);
         assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.chat/*']);
         assert.strictEqual(manifest.sidebar_action.default_panel, 'panel.html', 'the Dock lives in the side panel');
         for (const k of ['content_scripts', 'background', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
             assert.ok(!(k in manifest), `${k} must not be present`);
         }
+    });
+
+    await check('the public key fixes the Chrome id and the gecko id fixes the Firefox redirect', async () => {
+        const crypto = require('crypto');
+        const der = Buffer.from(manifest.key, 'base64');
+        const hash = crypto.createHash('sha256').update(der).digest();
+        let id = '';
+        for (let i = 0; i < 16; i++) id += String.fromCharCode(97 + (hash[i] >> 4)) + String.fromCharCode(97 + (hash[i] & 15));
+        assert.strictEqual(`https://${id}.chromiumapp.org/`, require('../browser/lib/config').OAUTH_REDIRECT_URIS[0], 'Chrome id');
+        const ff = crypto.createHash('sha1').update('companion@openvibe.network').digest('hex');
+        assert.strictEqual(`https://${ff}.extensions.allizom.org/`, require('../browser/lib/config').OAUTH_REDIRECT_URIS[1], 'Firefox redirect');
     });
 
     await check('the side panel is a key in both browsers\' manifests', async () => {
@@ -42,6 +53,8 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
         assert.ok(!('sidebar_action' in chrome), 'and no Firefox key');
         assert.ok(chrome.permissions.includes('sidePanel'), 'Chrome asks for its side-panel permission');
         assert.ok(!chrome.permissions.includes('sidebarAction'));
+        assert.ok(chrome.key, 'Chrome keeps the public key that fixes the extension id');
+        assert.ok(!firefox.key, 'Firefox gets no Chrome key');
     });
 
     await check('the audit fails if anything widens', async () => {
@@ -100,7 +113,7 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
             const src = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"])\/\/.*$/gm, '$1');
             for (const re of forbidden) assert.doesNotMatch(src, re, `${path.relative(DIR, f)} uses ${re}`);
             const rel = path.relative(DIR, f);
-            if (rel !== path.join('lib', 'api.js') && rel !== path.join('lib', 'network-api.js')) assert.doesNotMatch(src.replace(/fetch: self\.fetch\.bind\(self\)/g, ''), /\bfetch\s*\(/, `${rel} makes a request itself`);
+            if (!['lib/api.js', 'lib/network-api.js', 'lib/auth.js'].map((p) => path.join(...p.split('/'))).includes(rel)) assert.doesNotMatch(src.replace(/fetch: self\.fetch\.bind\(self\)/g, ''), /\bfetch\s*\(/, `${rel} makes a request itself`);
         }
         const tabUse = files.filter((f) => /\btabs\.(query|create|update)\b/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
         assert.deepStrictEqual(tabUse, [path.join('lib', 'platform.js')], 'only the platform wrapper touches tabs (it opens only hand-off pages)');

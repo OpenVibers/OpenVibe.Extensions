@@ -3,14 +3,16 @@
  * The permission audit for browser/manifest.json. test/manifest.test.js runs it, and so does
  * scripts/pack.js before it writes a zip. It fails when anything widens:
  *
- *   permissions            exactly activeTab + scripting + storage, plus sidePanel in the Chrome build
+ *   permissions            exactly activeTab + identity + scripting + storage, plus sidePanel in the Chrome build
  *                          (scripting runs lib/autoapply.js or lib/rating.js in the active tab only, when the
  *                          person presses "Try these codes on this page" or "Save its rating to OpenVibe
  *                          Reviews": activeTab is the only host access; Firefox's sidebar_action, the
- *                          side panel there, needs no permission of its own)
+ *                          side panel there, needs no permission of its own; identity starts the Dock's one-click
+ *                          OAuth sign-in)
  *   host_permissions       exactly the API origin, the Network origin and the Chat origin, all three
  *                          https://openvibe.<tld> sites (the coupon API, the Dock's state, the Dock's
  *                          Chats tab)
+ *   allowed key            key (Chrome's public key that fixes the extension id; dropped from the Firefox zip)
  *   forbidden keys         content_scripts, background, web_accessible_resources,
  *                          externally_connectable, optional_permissions, optional_host_permissions,
  *                          declarative_net_request, chrome_url_overrides, devtools_page, sandbox,
@@ -27,8 +29,8 @@ const path = require('path');
 
 const ALLOWED_KEYS = new Set(['manifest_version', 'name', 'short_name', 'version', 'description', 'homepage_url', 'author', 'icons',
     'action', 'options_ui', 'permissions', 'host_permissions', 'content_security_policy', 'minimum_chrome_version', 'browser_specific_settings',
-    'side_panel', 'sidebar_action']);
-const BASE_PERMISSIONS = ['activeTab', 'scripting', 'storage'];
+    'side_panel', 'sidebar_action', 'key']);
+const BASE_PERMISSIONS = ['activeTab', 'identity', 'scripting', 'storage'];
 const SIDE_PERMISSIONS = ['sidePanel', 'sidebarAction'];
 const PERMISSIONS = BASE_PERMISSIONS.concat(['sidePanel']);
 

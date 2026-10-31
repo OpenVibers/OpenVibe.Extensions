@@ -86,7 +86,7 @@
         agents: ['No agent work yet', 'When an agent needs your approval or finishes a task, it shows here.'],
     };
 
-    let _config = { token: null, apiBase: 'https://openvibe.network', soundBase: '/assets/sounds', swPath: '/openvibe-sw.js', onAction: null, inboxUrl: null };
+    let _config = { token: null, apiBase: 'https://openvibe.network', scopes: null, soundBase: '/assets/sounds', swPath: '/openvibe-sw.js', onAction: null, inboxUrl: null };
     let _pollTimer = null;
     let _lastSeenAt = null;       // newest created_at we have toasted / seen
     let _unreadCount = 0;
@@ -445,9 +445,14 @@
     function isCrossOrigin() {
         try { return new URL(_config.apiBase).origin !== window.location.origin; } catch { return false; }
     }
-    function apiFetch(path, opts = {}) {
+    /** The token may be a string or a function (the extension refreshes it); resolve it per request. */
+    async function tokenValue() {
+        return typeof _config.token === 'function' ? await _config.token() : _config.token;
+    }
+    async function apiFetch(path, opts = {}) {
         const headers = { ...(opts.headers || {}) };
-        if (_config.token) headers['Authorization'] = `Bearer ${_config.token}`;
+        const token = await tokenValue();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
             headers['Content-Type'] = 'application/json';
             opts = { ...opts, body: JSON.stringify(opts.body) };
@@ -760,7 +765,7 @@
         }));
     }
     function openActions(anchor) {
-        loadActionCenter().then((AC) => { if (AC) AC.toggle({ anchor, token: () => _config.token, apiBase: _config.apiBase }); });
+        loadActionCenter().then((AC) => { if (AC) AC.toggle({ anchor, token: () => tokenValue(), apiBase: _config.apiBase, scopes: _config.scopes }); });
     }
     function createActionsEl() {
         const b = document.createElement('div');
@@ -1217,7 +1222,7 @@
             if (!L || _live || !_config.realtime || !hasSession()) return;
             _live = L.create({
                 ticketUrl: `${_config.apiBase}/api/v1/realtime/ticket`,
-                token: () => _config.token,
+                token: () => tokenValue(),
                 credentials: isCrossOrigin() ? 'omit' : 'include',
                 onNotification: () => soon(false),
                 onGap: () => soon(true),
