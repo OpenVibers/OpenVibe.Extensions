@@ -23,17 +23,19 @@
   <p id="permission-row" hidden><button id="grant" type="button">Allow access to the OpenVibe sites</button> <span class="muted">Needed to report a code and to read your Dock; the Companion never asks for access to other sites.</span></p>
   <h2>The Dock in the side panel</h2>
   <p>The Dock shows what your agents are doing, what your chats wait for and what just happened, on every site, in the side panel. It is the same Dock, and it keeps the same place.</p>
-  <ol>
-    <li>Sign in at <a id="network-link" target="_blank" rel="noopener noreferrer" href="https://openvibe.network/my">openvibe.network</a>.</li>
-    <li>Paste your OpenVibe token here. It is the one your browser already has for OpenVibe (in the page, <code>localStorage.ov_token</code>); it stays on this device and goes only to openvibe.network.</li>
-  </ol>
-  <form id="network-form">
-    <label for="network-token">OpenVibe token</label>
-    <input id="network-token" type="password" autocomplete="off" spellcheck="false" placeholder="eyJ…" size="48">
-    <button type="submit">Save</button>
-  </form>
+  <p>Press <strong>Sign in</strong> once: the Network asks which account to use, and the extension keeps a read-only Dock sign-in that refreshes itself. The access token is kept in memory; the refresh token stays on this device. Sign out revokes it at the Network.</p>
   <p id="network-state" class="muted" aria-live="polite"></p>
-  <p><button id="network-disconnect" type="button">Disconnect the Dock</button> <span class="muted">Removes the OpenVibe token from this browser.</span></p>
+  <p><button id="network-signin" type="button">Sign in to OpenVibe.Network</button> <button id="network-signout" type="button" hidden>Sign out</button></p>
+  <details>
+    <summary>Use a pasted token instead (older connection)</summary>
+    <p>The 0.7.0 way: sign in at <a id="network-link" target="_blank" rel="noopener noreferrer" href="https://openvibe.network/my">openvibe.network</a>, then paste the token your browser has for OpenVibe (in the page, <code>localStorage.ov_token</code>). This is a full OpenVibe session, not the extension's scoped sign-in; it stays on this device and is still accepted until a later release removes it.</p>
+    <form id="network-form">
+      <label for="network-token">OpenVibe token</label>
+      <input id="network-token" type="password" autocomplete="off" spellcheck="false" placeholder="eyJ…" size="48">
+      <button type="submit">Save</button>
+    </form>
+    <p><button id="network-disconnect" type="button">Remove the pasted token</button> <span class="muted">This does not sign out the one-click connection; use Sign out for that.</span></p>
+  </details>
   <h2>What this extension can see</h2>
   <ul>
     <li>The tab you are on, and only when you open the Companion: its address and title.</li>
@@ -46,6 +48,7 @@
 <script src="lib/api.js"></script>
 <script src="lib/network-api.js"></script>
 <script src="lib/platform.js"></script>
+<script src="lib/auth.js"></script>
 <script src="options.js"></script>
 </body>
 </html>

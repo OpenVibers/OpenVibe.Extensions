@@ -47,20 +47,21 @@
     const TONE = { running: 'var(--accent, #3b82f6)', waiting: 'var(--warning, #f5a524)', scheduled: 'var(--text-secondary, #a0a0ab)', done: 'var(--success, #30a46c)', failed: 'var(--live-red, #e5484d)' };
 
     let el = null, opts = null, data = null, tab = null, timer = null, loading = false, seq = 0;
+    /** A site's Dock passes no scopes (full behaviour); the extension passes its read-only set. */
+    const canDecide = (o = opts) => !Array.isArray(o && o.scopes) || o.scopes.includes('actions.decide');
 
     function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
     const isPhone = () => { try { return root.matchMedia('(max-width: 640px)').matches; } catch { return false; } };
-    function apiWith(o, path, init = {}) {
+    async function apiWith(o, path, init = {}) {
         const base = String((o && o.apiBase) || 'https://openvibe.network').replace(/\/+$/, '');
         let cross = true; try { cross = new URL(base).origin !== root.location.origin; } catch { /* */ }
         const headers = { accept: 'application/json', ...(init.body ? { 'content-type': 'application/json' } : {}) };
-        const t = o && (typeof o.token === 'function' ? o.token() : o.token);
+        const t = o && (typeof o.token === 'function' ? await o.token() : o.token);
         if (t) headers.authorization = `Bearer ${t}`;
-        return fetch(base + path, { ...init, headers, credentials: cross ? 'omit' : 'include' }).then(async (r) => {
-            const body = await r.json().catch(() => ({}));
-            if (!r.ok) { const e = new Error(body.detail || body.title || `HTTP ${r.status}`); e.status = r.status; throw e; }
-            return body;
-        });
+        const r = await fetch(base + path, { ...init, headers, credentials: cross ? 'omit' : 'include' });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) { const e = new Error(body.detail || body.title || `HTTP ${r.status}`); e.status = r.status; throw e; }
+        return body;
     }
     const api = (path, init) => apiWith(opts, path, init);
     function ago(iso) {
@@ -207,7 +208,7 @@
         paint();
     }
 
-    function itemHTML(it) {
+    function itemHTML(it, o = opts) {
         const tone = TONE[it.bucket] || TONE.running;
         const meta = [
             `<span class="ovac-state">${esc(it.bucket === 'waiting' ? 'Needs you' : SHORT[it.bucket] || it.state)}</span>`,
@@ -216,7 +217,7 @@
             typeof it.steps === 'number' && it.steps > 0 ? `<span>${it.steps} step${it.steps === 1 ? '' : 's'}</span>` : '',
             `<span>${esc(it.bucket === 'scheduled' && it.next_run_at ? `runs ${ago(it.next_run_at)}` : ago(it.updated_at))}</span>`,
         ].join('');
-        const decides = it.bucket === 'waiting' && it.actions.includes('approve');
+        const decides = canDecide(o) && it.bucket === 'waiting' && it.actions.includes('approve');
         const btns = decides
             ? `<div class="ovac-btns"><button type="button" class="primary" data-do="approve">Approve</button><button type="button" data-do="decline">Decline</button><a href="${esc(it.href)}">${svg(G.open)}Details</a></div>`
             : it.bucket === 'failed' && it.actions.includes('retry') ? `<div class="ovac-btns"><a href="${esc(it.href)}">${svg(G.refresh)}Try again</a></div>` : '';
@@ -359,7 +360,7 @@
                 return;
             }
             list.innerHTML = groups.map(([b, items]) => (groups.length > 1 ? `<h4 class="ovac-group" data-bucket="${b}">${esc(b === 'waiting' ? 'Needs you' : SHORT[b])}<span>${items.length}</span></h4>` : '')
-                + items.map(itemHTML).join('')).join('');
+                + items.map((it) => itemHTML(it, mo)).join('')).join('');
         };
         const refresh = async () => {
             if (gone || busy) return;

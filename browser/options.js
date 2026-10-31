@@ -7,8 +7,9 @@
     const ext = typeof browser !== 'undefined' ? browser : chrome;
     const config = self.OVConfig;
     const platform = self.OVPlatform.createPlatform(ext, config);
+    const auth = self.OVAuth.createAuth({ platform: platform, config: config, fetch: self.fetch.bind(self) });
     const api = self.OVApi.createApiClient({ origin: config.API_ORIGIN, fetch: self.fetch.bind(self), getToken: platform.storage.getToken, timeoutMs: config.TIMEOUT_MS });
-    const net = self.OVNetwork.createNetworkClient({ origin: config.NETWORK_ORIGIN, fetch: self.fetch.bind(self), getToken: platform.storage.getNetworkToken, timeoutMs: config.TIMEOUT_MS });
+    const net = self.OVNetwork.createNetworkClient({ origin: config.NETWORK_ORIGIN, fetch: self.fetch.bind(self), getToken: function () { return auth.accessToken(); }, timeoutMs: config.TIMEOUT_MS });
     const state = document.getElementById('state');
     const networkState = document.getElementById('network-state');
     const networkInput = document.getElementById('network-token');
@@ -38,9 +39,42 @@
     });
 
     async function refreshNetwork() {
-        const token = await platform.storage.getNetworkToken();
-        networkState.textContent = token ? 'Connected (the Dock in the side panel works).' : 'Not connected: the side panel asks for your OpenVibe sign-in.';
+        const status = await auth.status();
+        const legacy = await platform.storage.getNetworkToken();
+        const signIn = document.getElementById('network-signin');
+        const signOut = document.getElementById('network-signout');
+        if (status.mode === 'oauth') {
+            const who = status.account && status.account.username ? ' as @' + status.account.username : '';
+            networkState.textContent = 'Connected' + who + ' — the Dock in the side panel works.';
+        } else if (legacy) {
+            networkState.textContent = 'Connected with a pasted token. Sign in for the one-click, scoped connection; the old token is still accepted for now.';
+        } else {
+            networkState.textContent = 'Not connected: the side panel asks you to sign in.';
+        }
+        signIn.hidden = false;
+        signOut.hidden = status.mode !== 'oauth' && !legacy;
     }
+
+    document.getElementById('network-signin').addEventListener('click', async function () {
+        const btn = this;
+        btn.disabled = true;
+        networkState.textContent = 'Opening OpenVibe.Network…';
+        try {
+            await auth.signIn({ interactive: true });
+        } catch (e) {
+            networkState.textContent = e && e.code === 'auth.cancelled' ? 'Sign-in was cancelled.' : 'Sign-in could not be completed. Try again.';
+        } finally {
+            btn.disabled = false;
+            await refreshNetwork();
+        }
+    });
+
+    document.getElementById('network-signout').addEventListener('click', async function () {
+        const btn = this;
+        btn.disabled = true;
+        try { await auth.signOut(); } catch { /* the local grant is cleared in any case */ }
+        finally { btn.disabled = false; await refreshNetwork(); }
+    });
 
     document.getElementById('network-form').addEventListener('submit', async function (ev) {
         ev.preventDefault();

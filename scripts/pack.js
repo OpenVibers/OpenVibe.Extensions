@@ -84,6 +84,7 @@ function forTarget(files, target) {
     } else if (target === 'firefox') {
         delete m.minimum_chrome_version;
         delete m.side_panel;
+        delete m.key;   // Chrome's public key is not a Firefox manifest field
         m.permissions = (m.permissions || []).filter((p) => p !== 'sidePanel');
     } else throw new Error('target must be chrome or firefox');
     files.set('manifest.json', Buffer.from(JSON.stringify(m, null, 2) + '\n'));

@@ -82,6 +82,7 @@ function unzip(buf) {
                 want.side_panel = { default_path: 'panel.html' };
             } else {
                 delete want.side_panel;
+                delete want.key;
                 want.permissions = want.permissions.filter((p) => p !== 'sidePanel');
             }
             assert.deepStrictEqual(JSON.parse(files.get('manifest.json')), want);

@@ -2,7 +2,8 @@
   "manifest_version": 3,
   "name": "OpenVibe Companion",
   "short_name": "OpenVibe",
-  "version": "0.7.0",
+  "version": "0.8.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqVJohdlaysL2HgSsj2Fsd8PxPvXJkZHjEvNyGSYNSEpZBoIeZd7Cm7xznGVikDBbe7WseaNLt+HheX4WhN94jU/FrS2016AqQG9NTHoymJR8XSrPPDyhc85EUpICOFwqfFsSOykzaRyHZVcrvoepYwntwFjWdt1ul4VozwkqKovZoKUgCn398aNvZ6AH/J0xb0xWMiOiL9CvUWN/jK4wv0ShnJevpmyBBHL273CkQvfMS3VUBvBjq3seMU8BAHkE5RI3c2y/MRdjwYGsCoMU6MPYwt46PQZ0S8SPnFFozJndkpoqc/ue9oXhd77b12GKlJ1BPhHgn8BSx4IAvjeL1wIDAQAB",
   "description": "Coupon codes for the shop you are on, tried in its coupon box when you ask; the same restaurant on every delivery app; a review site's rating saved to OpenVibe.Reviews; and one click to keep a rental listing on your OpenVibe.Rent board or watch a page. The OpenVibe Dock sits in the side panel, on every site. Reads the tab only when you open it.",
   "homepage_url": "https://github.com/OpenVibers/OpenVibe.Extensions",
   "author": "OpenVibers",
@@ -30,6 +31,7 @@
   },
   "permissions": [
     "activeTab",
+    "identity",
     "scripting",
     "storage"
   ],
