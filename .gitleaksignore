@@ -1,2 +1,0 @@
-# The Chrome manifest key is the extension's PUBLIC key (it fixes the extension id); no private key is in the repo.
-browser/manifest.json:generic-api-key:6
