@@ -127,7 +127,7 @@ browser/
   manifest.json          MV3; Chromium (minimum_chrome_version 114) and Firefox (gecko id, strict_min_version 128)
   panel.html / panel.js  the Dock in the side panel: the Network's state, the same tabs as the Dock on a site
   panel.css             the Dock fills the panel (no floating card, no pill)
-  shared/               the released OpenVibe.Shared Dock (v4.56.0), bundled: the CSP allows no remote script
+  shared/               the released OpenVibe.Shared Dock (v4.57.0), bundled: the CSP allows no remote script
   popup.html / popup.js  DOM wiring only
   options.html / .js     connect (save a checked token), disconnect, grant the API host permission
   lib/config.js          API_ORIGIN (the one origin it sends requests to); HANDOFF_ORIGINS (Rent, Watch, Food, Reviews)

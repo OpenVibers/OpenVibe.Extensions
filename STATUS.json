@@ -43,7 +43,7 @@
       "storeListing": "store/ (listing, privacy and permission answers, screenshot plan); support URL https://openvibe.coupons/companion",
       "features": [
         "OpenVibe Dock one-click sign-in: public OAuth client companion (PKCE S256, no secret), read-only scopes dock/activity/chat.read, access token in storage.session, rotating refresh token in storage.local, Sign out revokes the family, the account page lists it under Signed-in apps",
-        "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock (v4.56.0) bundled under browser/shared/, reading and writing the same Network state as the Dock on a site, with the same tabs (Agents, Chats, Activity); approvals/sends are hidden with the read-only scopes"
+        "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock (v4.57.0) bundled under browser/shared/, reading and writing the same Network state as the Dock on a site, with the same tabs (Agents, Chats, Activity); approvals/sends are hidden with the read-only scopes"
       ],
       "pending": [
         "owner: create the Chrome Web Store and AMO developer listings and upload the store zips with store/'s answers and screenshots; the Chrome id is fixed by browser/manifest.json key",
@@ -64,7 +64,7 @@
     "watches a page on OpenVibe.Watch, and compares delivery apps on OpenVibe.Food",
     "saves a review site's stated rating to OpenVibe.Reviews (read only when pressed, only on those sites)",
     "an optional cpx_ install token, never an OpenVibe session; and the Dock one-click OAuth sign-in (scopes dock, activity, chat.read; access in storage.session, rotating refresh in storage.local; the 0.7.0 pasted token is still a fallback until a later release)",
-    "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock (v4.56.0) bundled under browser/shared/, reading and writing the same Network state as the Dock on a site, with the same tabs (Agents, Chats, Activity); approvals/sends are hidden with the read-only scopes",
+    "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock (v4.57.0) bundled under browser/shared/, reading and writing the same Network state as the Dock on a site, with the same tabs (Agents, Chats, Activity); approvals/sends are hidden with the read-only scopes",
     "store-ready: reproducible Chrome and Firefox store zips (npm run pack:stores), listing and privacy answers in store/, Mozilla web-ext lint in CI",
     "kiosk companion (Firefox new-tab page and history bridge for Live's /kiosk), moved from OpenVibe.Live",
     "hardware/: the Raspberry Pi streamer and controller scripts, moved from OpenVibe.Live"
