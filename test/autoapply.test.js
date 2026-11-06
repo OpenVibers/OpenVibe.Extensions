@@ -16,7 +16,7 @@ const { createApiClient } = require('../browser/lib/api');
 const { createPlatform } = require('../browser/lib/platform');
 const { createController } = require('../browser/lib/controller');
 const config = require('../browser/lib/config');
-const { check, done, startStub, fakeExt } = require('./helpers/harness');
+const { check, done, startStub, fakeExt, COUPON } = require('./helpers/harness');
 
 const field = (attrs, labels = []) => ({
     tagName: 'INPUT', type: attrs.type || 'text', name: attrs.name || '', id: attrs.id || '',
@@ -78,6 +78,22 @@ const field = (attrs, labels = []) => ({
         assert.strictEqual(r.ok, true);
         assert.match(r.message, /Applied SAVE10: the total went down by 10\.00\. Check the total before you pay\./);
         assert.deepStrictEqual(r.results.map((x) => [x.code, x.outcome, x.saved]), [['GOOD', 'failed', null], ['SAVE10', 'worked', 10]]);
+    });
+
+    await check('a code its source keeps out of browser extensions is never shown or tried, even if an answer carries one', async () => {
+        const kept = { ...COUPON, extension_excluded: false };
+        const withheld = { ...COUPON, id: 'cpn_01K5ZK3M9P2Q4R6S8T0V2W4X6W', code: 'DEALNEWS10', extension_excluded: true };
+        const st = await startStub({ coupons: [kept, withheld] });
+        const ext = fakeExt({ url: 'https://shop.acme-outdoor.com/cart' });
+        const platform = createPlatform(ext, { ...config, API_ORIGIN: st.origin });
+        const api = createApiClient({ origin: st.origin, fetch, getToken: platform.storage.getToken });
+        const c = createController({ api, platform, host, handoff, isRental: handoffLib.isRental });
+        const vm = await c.open();
+        assert.deepStrictEqual(vm.coupons.map((x) => x.code), ['TRAIL15'], 'the marked code is dropped before showing');
+        const r = await c.tryCodes([withheld]);
+        assert.strictEqual(r.ok, false, 'and never typed into the page');
+        assert.strictEqual(ext.log.filter((l) => l[0] === 'scripting.executeScript').length, 0);
+        await st.close();
     });
 
     await check('no coupon box, or no Apply button: it says so and presses nothing', async () => {

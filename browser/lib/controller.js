@@ -44,6 +44,15 @@
         return 'Something went wrong. Try again later.';
     }
 
+    /**
+     * The codes the Companion may show: a code whose source's terms keep it out of browser extensions never
+     * reaches the person, even when an answer carries one. OpenVibe.Coupons already leaves those out
+     * (server/domain/source-policy.js); the Companion drops any marked `extension_excluded` all the same.
+     */
+    function visible(coupons) {
+        return (coupons || []).filter(function (c) { return c && !c.extension_excluded; });
+    }
+
     function createController(deps) {
         const api = deps.api;
         const platform = deps.platform;
@@ -74,7 +83,7 @@
                     const merchant = await api.resolve(hostname);
                     if (!merchant) return { state: 'no_merchant', host: hostname };
                     const out = await api.coupons(merchant.id);
-                    return { state: 'merchant', host: hostname, merchant: out.merchant, coupons: out.coupons || [], connected: connected };
+                    return { state: 'merchant', host: hostname, merchant: out.merchant, coupons: visible(out.coupons), connected: connected };
                 } catch (err) {
                     return { state: 'error', host: hostname, message: messageFor(err), code: (err && err.code) || null };
                 }
@@ -125,7 +134,7 @@
              */
             async tryCodes(coupons) {
                 const rank = { reported_working: 0, unknown: 1 };
-                const list = (coupons || []).filter(function (c) { return c && c.code && c.status !== 'reported_not_working'; })
+                const list = visible(coupons).filter(function (c) { return c.code && c.status !== 'reported_not_working'; })
                     .slice().sort(function (a, b) { return (rank[a.status] == null ? 2 : rank[a.status]) - (rank[b.status] == null ? 2 : rank[b.status]); });
                 if (!list.length) return { ok: false, message: 'There are no codes to try here.', results: [] };
                 let r;
