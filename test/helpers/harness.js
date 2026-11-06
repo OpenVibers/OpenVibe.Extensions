@@ -24,7 +24,7 @@ const NO_REPORT_TOKEN = `cpx_${'n'.repeat(43)}`;
 const SUBMITTER_TOKEN = `cpx_${'s'.repeat(43)}`;   // the person who submitted COUPON
 
 /** A stub of the Coupons API with the behaviour the extension relies on. */
-function startStub({ delayMs = 0 } = {}) {
+function startStub({ delayMs = 0, coupons = [COUPON] } = {}) {
     const requests = [];
     const server = http.createServer((req, res) => {
         const chunks = [];
@@ -47,7 +47,7 @@ function startStub({ delayMs = 0 } = {}) {
                 if (host === 'busy-shop.com') return send(429, { code: 'lookup.rate_limited' });
                 return send(404, { code: 'merchant.not_found' });
             }
-            if (req.method === 'GET' && u.pathname === `/api/v1/merchants/${MERCHANT.id}/coupons`) return send(200, { merchant: MERCHANT, coupons: [COUPON] });
+            if (req.method === 'GET' && u.pathname === `/api/v1/merchants/${MERCHANT.id}/coupons`) return send(200, { merchant: MERCHANT, coupons, left_out: 0 });
             if (req.method === 'POST' && u.pathname === `/api/v1/coupons/${COUPON.id}/report`) {
                 if (!auth) return send(401, { code: 'auth.required' });
                 if (auth === `Bearer ${NO_REPORT_TOKEN}`) return send(403, { code: 'token.scope' });
