@@ -110,7 +110,8 @@ The **OpenVibe Dock** — the pill, the card with its Agents, Chats and Activity
 browser's side panel (Chrome's `side_panel`, Firefox's `sidebar_action`), on every site. It is the
 released OpenVibe.Shared Dock, bundled under `browser/shared/` because the extension's CSP allows no
 remote script, and it reads and writes the same state on the Network as the Dock on a site, so it
-opens where the person left off.
+opens where the person left off. It hands that state to the Dock as it opens (the page's tab, chat, agent and
+unread counts) and re-reads it every 30 s, so a change on the page reaches the open side panel.
 
 It needs the person's own OpenVibe sign-in. Press **Sign in** in the panel or the settings page: the
 Network's account chooser opens, the extension is a public OAuth client (`companion`, PKCE S256, no
