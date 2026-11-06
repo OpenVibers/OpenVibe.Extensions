@@ -24,6 +24,7 @@
         const gateTitle = doc.getElementById('gate-title');
         const gateText = doc.getElementById('gate-text');
         const gateButton = doc.getElementById('gate-button');
+        let current = null, mounted = false;
 
         function showGate(title, text, button) {
             gateTitle.textContent = title;
@@ -54,7 +55,7 @@
                 return { mounted: false, reason: 'no-token' };
             }
             try {
-                await opts.net.dock();
+                current = await opts.net.dock();
             } catch (err) {
                 showGate('OpenVibe.Network said no',
                     'That sign-in was not accepted. Sign in to OpenVibe.Network again.',
@@ -71,9 +72,23 @@
                 chatBase: opts.config.CHAT_ORIGIN,
                 sibling: opts.sibling,
             });
-            opts.dock.open();
+            // Hand the state we just read to the Dock as it opens, so its own first read cannot race it back to the
+            // default tab. The page and the side panel then open on the same tab, chat and agent.
+            opts.dock.open({ doc: current });
+            mounted = true;
             gate.hidden = true;
             return { mounted: true, reason: null, mode: status.mode };
+        }
+
+        /** Re-read the Network's Dock state and hand it to the open Dock in place (the panel follows the page). */
+        async function sync() {
+            if (!mounted) return null;
+            try {
+                const next = await opts.net.dock();
+                current = next;
+                if (opts.dock.update) opts.dock.update(next);
+                return next;
+            } catch { return null; }
         }
 
         async function signIn() {
@@ -95,7 +110,7 @@
         if (gateButton && typeof gateButton.addEventListener === 'function') {
             gateButton.addEventListener('click', function () { signIn(); });
         }
-        return { start: start, signIn: signIn, showGate: showGate, messageFor: messageFor };
+        return { start: start, sync: sync, signIn: signIn, showGate: showGate, messageFor: messageFor };
     }
 
     /** The page wiring: the real browser APIs and the real Dock. */
@@ -121,6 +136,13 @@
             openSettings: function () { ext.runtime.openOptionsPage(); },
         });
         panel.start();
+        // The side panel stays open while the person moves between tabs and sites: re-read the Network's Dock state
+        // again every 30 s, and when the browser shows the panel again, so the page, the pop-out and the panel agree.
+        const syncT = setInterval(function () { panel.sync(); }, 30000);
+        if (syncT && typeof syncT.unref === 'function') syncT.unref();
+        root.document.addEventListener('visibilitychange', function () {
+            if (!root.document.hidden) panel.sync();
+        });
         return panel;
     }
 

@@ -21,24 +21,31 @@ function fakeDoc() {
     return { nodes, getElementById: (id) => nodes[id] || null };
 }
 
-/** A stand-in for the Network's GET /api/v1/me/dock. */
-async function startNetwork({ accept = TOKEN } = {}) {
+/** A stand-in for the Network's GET /api/v1/me/dock. `setState` changes what the next GET answers. */
+async function startNetwork({ accept = TOKEN, state, counts = { running: 1, waiting: 0, unread: 0 } } = {}) {
     const requests = [];
+    let answer = {
+        state: state || { open: false, tab: 'activity', pinned: false, agent: null, chat: null, place: { phone: { corner: 'bottom-right' }, desktop: { corner: 'bottom-right', width: null, height: null } }, updated_at: new Date().toISOString() },
+        counts,
+    };
     const server = http.createServer((req, res) => {
         requests.push({ url: req.url, auth: req.headers.authorization || null });
         const ok = req.headers.authorization === 'Bearer ' + accept;
         res.writeHead(ok ? 200 : 401, { 'content-type': 'application/json' });
-        res.end(JSON.stringify(ok
-            ? { state: { open: false, tab: 'activity', pinned: false, agent: null, chat: null, place: { phone: { corner: 'bottom-right' }, desktop: { corner: 'bottom-right', width: null, height: null } }, updated_at: new Date().toISOString() }, counts: { running: 1, waiting: 0, unread: 0 } }
-            : { error: 'unauthorized' }));
+        res.end(JSON.stringify(ok ? answer : { error: 'unauthorized' }));
     });
     await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
     const origin = 'http://127.0.0.1:' + server.address().port;
-    return { origin, requests, close: () => server.close() };
+    return { origin, requests, state: () => answer, setState: (next) => { answer = next; }, close: () => server.close() };
 }
 
 function fakeDock() {
-    const dock = { mounted: null, opened: 0, mount(opts) { dock.mounted = opts; }, open() { dock.opened++; } };
+    const dock = {
+        mounted: null, opened: 0, openedWith: null, updated: [],
+        mount(opts) { dock.mounted = opts; },
+        open(opts) { dock.opened++; dock.openedWith = opts || null; },
+        update(next) { dock.updated.push(next); },
+    };
     return dock;
 }
 
@@ -74,6 +81,32 @@ function fakeAuth({ mode = 'oauth', token = TOKEN } = {}) {
             assert.strictEqual(dock.mounted.sibling('dock.js'), 'chrome-extension://abc/shared/dock.js', 'the bundled Dock, from this extension');
             assert.strictEqual(doc.nodes.gate.hidden, true, 'the gate steps aside');
             assert.ok(net1.requests.some((r) => r.url === '/api/v1/me/dock' && r.auth === 'Bearer ' + TOKEN), 'the Network is asked with that sign-in');
+            assert.deepStrictEqual(dock.openedWith.doc, net1.state(), 'the Dock opens on the state the Network keeps, before its own read could race it');
+            assert.ok(!('tab' in dock.openedWith), 'the Dock itself chooses the tab from that state and what needs the person');
+        });
+
+        await check('the panel follows the state the Network keeps', async () => {
+            const first = {
+                state: { open: true, tab: 'chats', pinned: true, agent: 'ags_01JAB2C3D4E5F6G7H8J9K0MNPQ', chat: '11', place: { phone: { corner: 'bottom-right' }, desktop: { corner: 'top-left', width: 500, height: 600 } }, updated_at: new Date().toISOString() },
+                counts: { running: 0, waiting: 0, unread: 3 },
+            };
+            const net2 = await startNetwork({ state: first.state, counts: first.counts });
+            try {
+                const doc = fakeDoc();
+                const dock = fakeDock();
+                const net = createNetworkClient({ origin: net2.origin, fetch: (...a) => fetch(...a), getToken: async () => TOKEN });
+                const panel = createPanel({ doc, config: { NETWORK_ORIGIN: 'https://openvibe.network', CHAT_ORIGIN: 'https://openvibe.chat' }, platform: { storage: { getNetworkToken: async () => null } }, auth: fakeAuth(), net, dock });
+                await panel.start();
+                assert.strictEqual(dock.openedWith.doc.state.tab, 'chats', 'the side panel opens on the page\'s tab');
+                assert.deepStrictEqual(dock.openedWith.doc.counts, first.counts, 'and the unread counts the page sees');
+                // The page changes the tab and an agent: the next read carries it to the open side panel.
+                const next = { ...first, state: { ...first.state, tab: 'agent' }, counts: { running: 1, waiting: 0, unread: 3 } };
+                net2.setState(next);
+                assert.deepStrictEqual(await panel.sync(), next, 'the panel reads the same Network state again');
+                assert.deepStrictEqual(dock.updated.at(-1), next, 'and hands it to the Dock in place, without a reload');
+            } finally {
+                net2.close();
+            }
         });
 
         await check('without a sign-in the panel says what is missing', async () => {
