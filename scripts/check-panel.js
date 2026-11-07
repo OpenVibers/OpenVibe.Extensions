@@ -117,7 +117,17 @@ async function main() {
         const version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
         const browser = cdp(version.webSocketDebuggerUrl);
         await browser.ready;
-        const loaded = await browser.send('Extensions.loadUnpacked', { path: EXT_DIR });
+        let loaded;
+        try {
+            loaded = await browser.send('Extensions.loadUnpacked', { path: EXT_DIR });
+        } catch (err) {
+            // An older Chrome has no Extensions domain; that is this browser's limit, not the panel's.
+            if (/method|not available|not found|unsupported/i.test(String(err && err.message))) {
+                browser.close();
+                return { skipped: `this Chrome cannot load an unpacked extension over CDP (${err.message})` };
+            }
+            throw err;
+        }
         if (loaded.id !== EXT_ID) throw new Error(`Chrome loaded ${loaded.id}, the manifest key says ${EXT_ID}`);
         browser.close();
 
