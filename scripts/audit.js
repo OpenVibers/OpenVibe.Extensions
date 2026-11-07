@@ -9,16 +9,20 @@
  *                          Reviews": activeTab is the only host access; Firefox's sidebar_action, the
  *                          side panel there, needs no permission of its own; identity starts the Dock's one-click
  *                          OAuth sign-in)
- *   host_permissions       exactly the API origin, the Network origin and the Chat origin, all three
- *                          https://openvibe.<tld> sites (the coupon API, the Dock's state, the Dock's
- *                          Chats tab)
+ *   host_permissions       exactly the API origin, the Network origin, the Chat origin and the Codes
+ *                          origin, all https://openvibe.<tld> sites (the coupon API, the Dock's state,
+ *                          the Dock's Chats tab, and the Dock's agent view)
  *   allowed key            key (Chrome's public key that fixes the extension id; dropped from the Firefox zip)
  *   forbidden keys         content_scripts, background, web_accessible_resources,
  *                          externally_connectable, optional_permissions, optional_host_permissions,
  *                          declarative_net_request, chrome_url_overrides, devtools_page, sandbox,
  *                          omnibox, … (anything not on the allow-list of keys; the side panel's own keys,
  *                          side_panel and sidebar_action, are on it)
- *   CSP                    script-src 'self' only, connect-src only the OpenVibe origins, no unsafe-*
+ *   CSP                    script-src 'self' only; style-src 'self' 'unsafe-inline' (the Dock draws its
+ *                          own styles in a <style> element); img-src 'self' blob: (the agent view's
+ *                          still is a local object URL); connect-src only the OpenVibe origins;
+ *                          frame-src only Live's agent embed; no other unsafe-*, wildcard, data: or
+ *                          remote http
  *   pages                  popup/options/panel HTML load only local scripts, no inline script
  *   config                 lib/config.js API_ORIGIN equals the host permission's origin
  *   hand-offs              lib/config.js HANDOFF_ORIGINS are https://openvibe.<tld> sites only (the
@@ -67,7 +71,16 @@ function auditManifest(m, { apiOrigin, origins } = {}) {
         if (JSON.stringify(dirs['connect-src'].slice().sort()) !== JSON.stringify(os.slice().sort())) problems.push(`CSP connect-src must be exactly ${os.join(' ')}`);
         if (JSON.stringify(dirs['default-src']) !== JSON.stringify(["'none'"])) problems.push("CSP default-src must be 'none'");
         if (JSON.stringify(dirs['object-src']) !== JSON.stringify(["'none'"])) problems.push("CSP object-src must be 'none'");
-        if (/unsafe-|\*|data:|blob:|http:(?!\/\/(localhost|127\.0\.0\.1))/.test(csp)) problems.push('CSP must not allow unsafe-*, wildcards, data:, blob: or remote http');
+        if (JSON.stringify(dirs['style-src']) !== JSON.stringify(["'self'", "'unsafe-inline'"])) problems.push("CSP style-src must be exactly 'self' 'unsafe-inline' (the Dock's own <style>)");
+        if (JSON.stringify(dirs['img-src']) !== JSON.stringify(["'self'", 'blob:'])) problems.push("CSP img-src must be exactly 'self' blob: (the agent view's still)");
+        if (JSON.stringify(dirs['frame-src']) !== JSON.stringify(['https://openvibe.live'])) problems.push('CSP frame-src must be exactly https://openvibe.live (the agent embed)');
+        for (const [name, values] of Object.entries(dirs)) {
+            if (name === 'style-src') continue;
+            for (const v of values) {
+                const devLocal = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(v);
+                if (/unsafe-|\*|data:/.test(v) || (v === 'blob:' && name !== 'img-src') || (/^http:/.test(v) && !devLocal)) problems.push(`CSP ${name} must not allow ${v}`);
+            }
+        }
     }
     const gecko = m.browser_specific_settings && m.browser_specific_settings.gecko;
     if (!gecko || !gecko.id) problems.push('browser_specific_settings.gecko.id is required (Firefox)');
@@ -94,13 +107,14 @@ function auditDir(dir) {
     const origin = (configSrc.match(/API_ORIGIN:\s*'([^']+)'/) || [])[1];
     const network = (configSrc.match(/NETWORK_ORIGIN:\s*'([^']+)'/) || [])[1];
     const chat = (configSrc.match(/CHAT_ORIGIN:\s*'([^']+)'/) || [])[1];
+    const codes = (configSrc.match(/CODES_ORIGIN:\s*'([^']+)'/) || [])[1];
     const handoffs = ((configSrc.match(/HANDOFF_ORIGINS:\s*Object\.freeze\(\[([^\]]*)\]\)/) || [])[1] || '').split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
     const problems = [];
     if (!origin) problems.push('lib/config.js has no API_ORIGIN');
     if (!handoffs.length) problems.push('lib/config.js has no HANDOFF_ORIGINS');
     for (const h of handoffs) if (!/^https:\/\/openvibe\.[a-z]+$/.test(h)) problems.push(`hand-off origin ${h} is not an https://openvibe.<tld> site`);
-    const origins = [origin, network, chat].filter(Boolean);
-    for (const o of [network, chat].filter(Boolean)) if (!/^https:\/\/openvibe\.[a-z]+$/.test(o)) problems.push(`${o} is not an https://openvibe.<tld> site`);
+    const origins = [origin, network, chat, codes].filter(Boolean);
+    for (const o of [network, chat, codes].filter(Boolean)) if (!/^https:\/\/openvibe\.[a-z]+$/.test(o)) problems.push(`${o} is not an https://openvibe.<tld> site`);
     problems.push(...auditManifest(manifest, { apiOrigin: origin, origins }));
     for (const page of ['popup.html', 'options.html', 'panel.html']) problems.push(...auditPage(fs.readFileSync(path.join(dir, page), 'utf8'), page));
     return { manifest, origin, origins, problems };

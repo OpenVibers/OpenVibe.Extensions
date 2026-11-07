@@ -5,7 +5,9 @@
  * The Dock is the released OpenVibe.Shared one, bundled under browser/shared/ because the
  * extension's CSP allows no remote script. The panel gives it the Network origin and the
  * person's Network sign-in, so it reads and writes the same state as the Dock on a site: the
- * same tabs (Agents, Chats, Activity) and the same place.
+ * same tabs (Vibe, Agents, Chats, Activity) and the same place. The Agents tab's agent view reads
+ * the person's desk stream from OpenVibe.Codes (the extension's `agentBase`) and frames its embed
+ * from OpenVibe.Live.
  *
  * The sign-in is the Network's OAuth public client (lib/auth.js): one press, PKCE, a scoped access
  * token in storage.session and a rotating refresh token in storage.local. The 0.7.0 pasted
@@ -70,6 +72,7 @@
                 me: account && account.username ? account.username : '',
                 apiBase: opts.config.NETWORK_ORIGIN,
                 chatBase: opts.config.CHAT_ORIGIN,
+                agentBase: opts.config.CODES_ORIGIN,
                 sibling: opts.sibling,
             });
             // Hand the state we just read to the Dock as it opens, so its own first read cannot race it back to the

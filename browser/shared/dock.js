@@ -13,9 +13,11 @@
 // State: GET/PUT <apiBase>/api/v1/me/dock (network.dock-result@1, network.dock-state@1): open, tab, pinned and where it
 // sits for each device class, so it follows the person from site to site. A change shows at once (onChange paints the
 // pill and the site's copy) and reaches the Network a beat later; before Network has the route the copy stands.
-// Tabs: Agents (action-center.js mount(): what needs you, then what runs, approve or decline in place), Chats (K-D2: the
-// person's conversations and DMs from OpenVibe.Chat's own API, GET /api/dm/conversations, opened in place, read and
-// answered there) and Activity (notification-ui.js renderDock(): the bell's list). The agent's live screen is K-D3.
+// Tabs: Agents (action-center.js mount(): what needs you, then what runs, approve or decline in place; K-D3: above it,
+// the person's own desk stream — dock-agent.js loads the first time the tab opens — with Curtain now, End and the still
+// when nothing is live), Chats (K-D2: the person's conversations and DMs from OpenVibe.Chat's own API,
+// GET /api/dm/conversations, opened in place, read and answered there) and Activity (notification-ui.js renderDock():
+// the bell's list).
 // Desktop: a floating card at the pill's corner. Drag its head to move it (it snaps to the nearest corner), drag the
 // free corner to resize (320-720 × 360-900 px). It is not modal: the page stays usable. Phones: a sheet from the
 // bottom over a scrim; drag the head down, ×, Escape or a tap outside closes it. Motion is transform and opacity only.
@@ -38,8 +40,14 @@
         chat: '<path d="M5 6.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-7l-4 3v-3H5A1.5 1.5 0 0 1 3.5 16V8A1.5 1.5 0 0 1 5 6.5z"/>',
         back: '<path d="M14.5 6.5L9 12l5.5 5.5"/>',
         send: '<path d="M4.5 12h11M11 6.5l5.5 5.5-5.5 5.5"/>',
+        vibe: '<path d="M12 4.5a7.5 7.5 0 0 1 6.4 11.4L19.5 19.5l-3.6-1.1A7.5 7.5 0 1 1 12 4.5z"/><path d="M9 11.5h.01M12 11.5h.01M15 11.5h.01"/>',
+        clock: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M9.5 3h5"/>',
     };
-    const TABS = [['agent', 'Agents', G.spark], ['chats', 'Chats', G.chat], ['activity', 'Activity', G.bell]];
+    // Vibe first (L48 V2): the person's AI, on every site.
+    const TABS = [['vibe', 'Vibe', G.vibe], ['agent', 'Agents', G.spark], ['chats', 'Chats', G.chat], ['activity', 'Activity', G.bell]];
+    // The tabs the Network keeps in the person's Dock state (network.dock-state@1; vibe since contracts 0.270.0); a
+    // newer one stays on this site's copy until the Network learns it.
+    const SAVED_TABS = ['vibe', 'agent', 'chats', 'activity'];
     const DEFAULT_STATE = { open: false, tab: 'activity', pinned: false, agent: null, chat: null, place: { phone: { corner: 'bottom-right' }, desktop: { corner: 'bottom-right', width: null, height: null } } };
 
     let el = null, o = {}, doc = null, tab = 'activity', saveT = 0, pending = {}, lastFocus = null;
@@ -55,6 +63,8 @@
     const kind = () => (phone() ? 'phone' : 'desktop');
     const place = () => ({ ...DEFAULT_STATE.place[kind()], ...((state().place || {})[kind()] || {}) });
     const sibling = (name) => (typeof o.sibling === 'function' ? o.sibling(name) : `https://openvibe.network/shared/${name}`);
+    // K-D3: the agent stream comes from OpenVibe.Codes' API (it mints the view ticket with the person's own token).
+    const agentBase = () => String(o.agentBase || 'https://openvibe.codes').replace(/\/+$/, '');
 
     async function call(path, init = {}) {
         const base = String(o.apiBase || 'https://openvibe.network').replace(/\/+$/, '');
@@ -139,7 +149,9 @@
             @keyframes ovdk-rise { from { transform: translateY(100%); } }
             .ovdk svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
             .ovdk-head { position: relative; flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 8px 8px 10px; cursor: grab; touch-action: none; user-select: none; }
-            .ovdk-tabs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--text-primary, #ececf1) 6%, transparent); min-width: 0; }
+            .ovdk-tabs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--text-primary, #ececf1) 6%, transparent); min-width: 0; flex: 0 1 auto; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+            .ovdk-tabs::-webkit-scrollbar { display: none; }
+            .ovdk-tabs button { flex: none; }
             .ovdk-tabs button { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px 0 11px; border: 0; border-radius: 999px; background: transparent;
                 color: var(--text-secondary, #b6b6c0); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background .15s, color .15s; }
             .ovdk-tabs button svg { width: 17px; height: 17px; flex: none; }
@@ -167,8 +179,10 @@
             .ovdk-foot button:hover { color: var(--text-primary, #ececf1); }
             .ovdk-foot svg { width: 15px; height: 15px; }
             .ovdk-wait { display: flex; justify-content: center; padding: 36px; }
-            .ovdk-wait span { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border, rgba(255,255,255,.12)); border-top-color: var(--accent, #3b82f6); animation: ovdk-spin .8s linear infinite; }
-            @keyframes ovdk-spin { to { transform: rotate(360deg); } }
+            .ovdk-wait span { position: relative; display: inline-block; width: 6px; height: 6px; margin: 0 10px; border: 0; border-radius: 50%; background: var(--accent, #3b82f6); animation: ovdk-hop 1s ease-in-out .15s infinite; }
+            .ovdk-wait span::before, .ovdk-wait span::after { content: ''; position: absolute; top: 0; width: 6px; height: 6px; border-radius: 50%; background: inherit; animation: ovdk-hop 1s ease-in-out infinite; }
+            .ovdk-wait span::before { left: -10px; } .ovdk-wait span::after { left: 10px; animation-delay: .3s; }
+            @keyframes ovdk-hop { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-4px); opacity: 1; } }
             .ovdk-none { padding: 40px 24px; text-align: center; color: var(--text-muted, #8b8b96); font-size: 13.5px; line-height: 1.45; }
             .ovdk-size { position: absolute; z-index: 2; width: 22px; height: 22px; top: 0; left: 0; cursor: nwse-resize; touch-action: none; }
             .ovdk-size::after { content: ''; position: absolute; top: 9px; left: 9px; width: 7px; height: 7px; border-top: 2px solid var(--text-muted, #8b8b96); border-left: 2px solid var(--text-muted, #8b8b96); border-top-left-radius: 3px; opacity: 0; transition: opacity .15s; }
@@ -181,7 +195,7 @@
             .ovdk[data-corner="top-left"] .ovdk-size::after { top: auto; bottom: 9px; left: auto; right: 9px; border: 0; border-bottom: 2px solid var(--text-muted, #8b8b96); border-right: 2px solid var(--text-muted, #8b8b96); border-radius: 0 0 3px 0; }
             @media (pointer: coarse) { .ovdk-acts button { width: 44px; height: 44px; } .ovdk-tabs button { height: 40px; } }
             .ovdk { container-type: inline-size; }
-            @container (max-width: 440px) { .ovdk-tabs button { padding: 0 11px; gap: 6px; } .ovdk-tabs button svg { display: none; } }
+            @container (max-width: 440px) { .ovdk-tabs button { padding: 0 8px; gap: 6px; font-size: 13px; } .ovdk-tabs button svg { display: none; } .ovdk-acts { gap: 0; } .ovdk-acts button { width: 34px; } }
             .ovdk-muted { color: var(--text-muted, #8b8b96); }
             .ovdk-i { display: inline-grid; place-items: center; }
             .ovdk-i svg { width: 18px; height: 18px; }
@@ -256,6 +270,7 @@
             <header class="ovdk-head">
                 <div class="ovdk-tabs" role="tablist" aria-label="Dock">${TABS.map(([id, label, g]) => `<button type="button" role="tab" id="ovdk-tab-${id}" aria-controls="ovdk-panel-${id}" data-tab="${id}" aria-selected="false" tabindex="-1">${svg(g)}<span>${label}</span><b class="n" data-n="${id}"></b></button>`).join('')}</div>
                 <div class="ovdk-acts">
+                    <button type="button" data-act="timer" title="A timer" aria-label="Start a timer">${svg(G.clock)}</button>
                     <button type="button" data-act="pop" hidden title="Open the Dock in a window of its own" aria-label="Open the Dock in a window of its own">${svg(G.open)}</button>
                     <button type="button" data-act="pin" aria-pressed="false" title="Keep the Dock's button on every page" aria-label="Keep the Dock's button on every page">${svg(G.pin)}</button>
                     <button type="button" data-act="close" title="Close" aria-label="Close the Dock">${svg(G.close)}</button>
@@ -275,6 +290,7 @@
         el.querySelector('[data-act="close"]').addEventListener('click', () => close());
         el.querySelector('[data-act="pop"]').addEventListener('click', () => { if (popped) backToPage(); else popOut(); });
         el.querySelector('[data-act="pin"]').addEventListener('click', () => { save({ pinned: !state().pinned }); paintPin(); });
+        el.querySelector('[data-act="timer"]').addEventListener('click', (e) => { const a = e.currentTarget; withTimer((t) => t.menu(a)); });
         el.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } });
         // A tap outside closes the phone sheet. The path is the one at dispatch: a tap that redraws its own panel (opening a
         // chat) leaves its target detached, and must not read as outside.
@@ -407,14 +423,24 @@
     function setTab(id, remember) {
         tab = TABS.some(([t]) => t === id) ? id : 'activity';
         if (tab !== 'chats') clearTimeout(chats.timer);
+        if (tab !== 'vibe' && vibe.api) vibe.api.pause();
         el.querySelectorAll('[role="tab"]').forEach((b) => { const on = b.dataset.tab === tab; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
         el.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== tab; });
-        if (remember && state().tab !== tab) save({ tab });
+        if (remember && state().tab !== tab && SAVED_TABS.includes(tab)) save({ tab });
         fill(tab);
     }
 
     async function fill(id) {
         const panel = el.querySelector(`[data-panel="${id}"]`);
+        if (id === 'vibe') {
+            vibe.panel = panel;
+            if (vibe.api) return vibe.api.refresh();
+            panel.innerHTML = '<div class="ovdk-wait"><span></span></div>';
+            const ok = await load('dock-vibe.js', () => !!(root.OpenVibeDockVibe && root.OpenVibeDockVibe.mount));
+            if (!ok) { panel.innerHTML = '<div class="ovdk-none">Vibe did not load. Check your connection, then open it again.</div>'; return; }
+            vibe.api = root.OpenVibeDockVibe.mount(panel, { chatCall, active: () => isOpen() && tab === 'vibe', styles: () => (el && el.ownerDocument.getElementById('ovdk-styles')) || document.getElementById('ovdk-styles'), icons: { vibe: G.vibe, send: G.send, clock: G.clock, bell: G.bell }, refresh: () => read() });
+            return;
+        }
         if (id === 'chats') { chats.panel = panel; mounts.chats = mounts.chats || { refresh: null }; return state().chat && chats.open !== state().chat ? openChat(state().chat, false) : chats.open ? openChat(chats.open, false) : chatList(); }
         if (mounts[id]) { if (mounts[id].refresh) mounts[id].refresh(); return; }
         mounts[id] = { refresh: null };
@@ -422,8 +448,12 @@
         if (id === 'agent') {
             const ok = await load('action-center.js', () => !!(root.OpenVibeActionCenter && root.OpenVibeActionCenter.mount));
             if (!ok) return failed(panel, id);
-            panel.innerHTML = `<div class="ovdk-scroll"></div><div class="ovdk-foot"><button type="button" data-act="all">${svg(G.open)}Scheduled, done and failed</button><a href="https://openvibe.actor/">Give an agent a task →</a></div>`;
-            const m = root.OpenVibeActionCenter.mount(panel.firstChild, {
+            // K-D3: the person's own agent stream above the list; it hides itself when there is none.
+            panel.innerHTML = `<div class="ovdk-agent"></div><div class="ovdk-scroll"></div><div class="ovdk-foot"><button type="button" data-act="all">${svg(G.open)}Scheduled, done and failed</button><a href="https://openvibe.actor/">Give an agent a task →</a></div>`;
+            load('dock-agent.js', () => !!(root.OpenVibeDockAgent && root.OpenVibeDockAgent.mount)).then((on) => {
+                if (on && !mounts[id + 'View'] && panel.isConnected) mounts[id + 'View'] = root.OpenVibeDockAgent.mount(panel.firstChild, { token: o.token, base: agentBase(), active: () => isOpen() && tab === 'agent' });
+            });
+            const m = root.OpenVibeActionCenter.mount(panel.querySelector('.ovdk-scroll'), {
                 token: o.token, apiBase: o.apiBase, scopes: o.scopes, buckets: ['waiting', 'running'],
                 onCounts: (c) => { doc = { ...(doc || {}), state: state(), counts: { ...counts(), running: c.running || 0, waiting: c.waiting || 0 } }; badges(); notify(); },
             });
@@ -461,8 +491,9 @@
     const icon = (path) => { const s = h('span', 'ovdk-i'); s.innerHTML = svg(path); return s; };
     async function chatCall(path, init = {}) {
         const t = await tokenOf();
-        const headers = { accept: 'application/json', ...(init.body ? { 'content-type': 'application/json' } : {}), ...(t ? { authorization: `Bearer ${t}` } : {}) };
-        return fetch(chatBase() + path, { ...init, headers, credentials: 'omit' }).then(async (r) => {
+        const headers = { accept: 'application/json', ...(init.body ? { 'content-type': init.type || 'application/json' } : {}), ...(t ? { authorization: `Bearer ${t}` } : {}) };
+        const { type: _type, ...rest } = init;
+        return fetch(chatBase() + path, { ...rest, headers, credentials: 'omit' }).then(async (r) => {
             const b = await r.json().catch(() => ({}));
             if (!r.ok) { const e = new Error(b.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
             return b;
@@ -605,6 +636,29 @@
         if (isOpen() && tab === 'chats' && chats.open === id) chats.timer = setTimeout(() => pull(list, scroll), 5000);
     }
 
+    // ── Vibe (plan L48 V2): the person's Vibe, in dock-vibe.js, loaded the first time the tab opens (the Dock is on
+    // every page for signed-in people; Vibe's conversation and mic are not needed until then). Alt+V talks to Vibe from
+    // any page: it opens the Dock on Vibe and starts listening (only where the browser can listen).
+    const vibe = { panel: null, api: null };
+    const canListen = () => !!(root.SpeechRecognition || root.webkitSpeechRecognition);
+    document.addEventListener('keydown', (e) => {
+        if (!e.altKey || e.ctrlKey || e.metaKey || String(e.key).toLowerCase() !== 'v' || !canListen() || !o || typeof o.token !== 'function') return;
+        e.preventDefault();
+        const talk = () => { if (vibe.api && vibe.api.talk) vibe.api.talk(); };
+        if (!isOpen() || tab !== 'vibe') { open({ tab: 'vibe' }); setTimeout(talk, 600); } else talk();
+    });
+
+    // ── The timer (plan L48 R2): dock-timer.js, loaded when the state carries one or the person opens its menu ──
+    let timerMod = null, timerLoading = null;
+    function withTimer(fn) {
+        if (timerMod) return fn(timerMod);
+        timerLoading = timerLoading || load('dock-timer.js', () => !!(root.OpenVibeDockTimer && root.OpenVibeDockTimer.attach)).then((ok) => {
+            if (ok && !timerMod) timerMod = root.OpenVibeDockTimer.attach({ state, save, host: () => el, repaint: () => paintPill() });
+            return timerMod;
+        });
+        return timerLoading.then((m) => (m ? fn(m) : null));
+    }
+
     // ── The pill ─────────────────────────────────────────────
     let pill = null, readT = 0, bound = false;
     function store(v) {
@@ -624,13 +678,16 @@
             pill.setAttribute('aria-label', 'The Dock is in a window of its own \u2014 click to bring it back');
             return;
         }
-        const show = !isOpen() && !!(w || r || st.pinned);
+        // A running timer: its minutes, unless an agent needs the person (that comes first).
+        if (st.timer && !timerMod) withTimer((m) => m.sync());
+        const tm = timerMod && !w ? timerMod.pillText() : null;
+        const show = !isOpen() && !!(w || r || st.pinned || tm);
         pill.hidden = !show;
         pill.dataset.corner = CORNERS.includes(corner) ? corner : 'bottom-right';
-        pill.dataset.tone = w ? 'waiting' : r ? 'running' : 'idle';
+        pill.dataset.tone = w ? 'waiting' : tm ? tm.tone : r ? 'running' : 'idle';
         pill.querySelector('.ov-mark').setAttribute('data-state', r && !w ? 'busy' : '');
-        pill.querySelector('.ovdk-t').textContent = w ? 'Needs you' : r ? (r > 1 ? `${r} working` : 'Working') : '';
-        pill.setAttribute('aria-label', [w ? `${w} need${w > 1 ? '' : 's'} you` : '', r ? `${r} working` : ''].filter(Boolean).join(', ') || 'Open the Dock');
+        pill.querySelector('.ovdk-t').textContent = w ? 'Needs you' : tm ? tm.text : r ? (r > 1 ? `${r} working` : 'Working') : '';
+        pill.setAttribute('aria-label', tm ? tm.label : [w ? `${w} need${w > 1 ? '' : 's'} you` : '', r ? `${r} working` : ''].filter(Boolean).join(', ') || 'Open the Dock');
         // Desktop toasts (bottom right, notification-ui.js) stack above a pill in their corner; an open Dock sets its own.
         if (!isOpen()) clear(show && pill.dataset.corner === 'bottom-right' && !phone() ? 58 : 0);
     }
@@ -647,7 +704,7 @@
             update(next);
             if (!isOpen() && next.state.open && !phone()) open();
             const c = next.counts || {};
-            if (c.running || c.waiting) readT = setTimeout(read, 30000);
+            if (c.running || c.waiting || next.state.timer) readT = setTimeout(read, 30000);
         } catch { /* offline: the copy stands */ }
     }
     /** The pill for a signed-in person (navbar.js), or none (null: signed out, or the site turned the Dock off). */
@@ -700,7 +757,7 @@
         if (!d.head) d.documentElement.appendChild(d.createElement('head'));
         if (!d.body) d.documentElement.appendChild(d.createElement('body'));
         d.title = 'OpenVibe Dock';
-        for (const id of ['ovdk-styles', 'ovac-styles', 'openvibe-notif-styles', 'ov-mark-css']) {
+        for (const id of ['ovdk-styles', 'ovac-styles', 'openvibe-notif-styles', 'ovda-styles', 'ov-mark-css']) {
             const s = document.getElementById(id);
             if (!s) continue;
             const c = d.createElement('style');
@@ -769,7 +826,7 @@
         if (phone()) { el.setAttribute('aria-modal', 'true'); document.documentElement.classList.add('ovdk-sheet-open'); } else el.removeAttribute('aria-modal');
         setTab(want, false);
         readUnread();
-        if (!state().open || state().tab !== tab) save({ open: true, tab }); else notify();
+        if (!state().open || (state().tab !== tab && SAVED_TABS.includes(tab))) save({ open: true, ...(SAVED_TABS.includes(tab) ? { tab } : {}) }); else notify();
         setTimeout(() => { try { el.querySelector('[role="tab"][aria-selected="true"]').focus({ preventScroll: true }); } catch { /* */ } }, 0);
     }
     function close() {
@@ -794,6 +851,7 @@
         if (!next || !next.state) return;
         doc = Object.keys(pending).length ? { ...next, state: state() } : next;
         store(doc);
+        if (timerMod) timerMod.sync();
         paintPill();
         if (!el) return;
         badges();

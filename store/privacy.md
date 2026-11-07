@@ -16,8 +16,11 @@ reads, sends or stores, change this file, the README's "What it can see" table a
 | `scripting` | Four buttons inject a script packaged in the extension into the active tab's top frame, only after the press: "Try these codes on this page" runs `lib/autoapply.js` (finds the coupon box, types each code, reads whether the order total changed), "Save its rating to OpenVibe Reviews" runs `lib/rating.js` (reads the rating the page states), and "Keep on my Rent board" and "Check the rent" run `lib/listing.js` (reads the price, city and bedrooms a listing states). None makes a request or reads cookies or storage. |
 | `storage` | Keeps the optional `cpx_` install token, and the Dock's sign-in: the OAuth access token in `storage.session` (memory) and the rotating refresh token in `storage.local` (never synced). A pasted 0.7.0 `networkToken` is kept only as that fallback. |
 | `identity` | Starts the Dock's one-click sign-in (`launchWebAuthFlow`) at openvibe.network; the code returns to the browser's own extension redirect URL. No password is read by the extension. |
-| Host permission `https://openvibe.coupons/*` | The one API the extension calls: look up a merchant by hostname, list its codes, and report whether a code worked. |
-| Remote code | **No.** All JavaScript is in the package; the CSP is `script-src 'self'` with no `eval`. |
+| Host permission `https://openvibe.coupons/*` | The Coupons API: look up a merchant by hostname, list its codes, and report whether a code worked. |
+| Host permission `https://openvibe.network/*` | The Dock's state (`GET`/`PUT /api/v1/me/dock`) and its notifications, with the person's own token. |
+| Host permission `https://openvibe.chat/*` | The Dock's Chats tab: the person's conversations and DMs (`GET /api/dm/conversations`), with the same token. |
+| Host permission `https://openvibe.codes/*` | The Dock's agent view: the person's own desk stream, its still, and the Pause/Resume, Curtain now, Mute/Unmute and End controls (`/api/v1/me/agent-view`), with the same token. |
+| Remote code | **No.** All JavaScript is in the package; the CSP is `script-src 'self'` with no `eval`. The agent view's `https://openvibe.live/embed/agent/…` frame is the only remote frame (`frame-src`), and it is Live's own page, not script the extension runs. |
 
 ## Data usage (Chrome Web Store "Privacy practices" tab)
 
@@ -26,8 +29,8 @@ Tick these data types, because each leaves the device in some case:
 | Type | Ticked | What, when, where |
 |---|---|---|
 | Web history | **Yes** | The active tab's **hostname** goes to openvibe.coupons when the popup opens on a site. On a hand-off press, the page's address (credentials, fragment and tracking parameters removed) and title go to openvibe.rent, openvibe.watch, openvibe.food or openvibe.reviews in the address of a tab the person sees. |
-| Website content | **Yes** | On "Save its rating to OpenVibe Reviews": the business name, rating, scale, count of ratings and city the page states, in the address of the openvibe.reviews tab. On "Compare delivery apps": the restaurant or store name taken from the page title, to openvibe.food. On "Keep on my Rent board" and "Check the rent": the price, its currency, the city and region (never the street) and the bedrooms the listing states, in the address of the openvibe.rent tab. |
-| Authentication information | **Yes** | Only if the person connects the extension: the `cpx_` install token they pasted is sent to openvibe.coupons as `Authorization: Bearer` on its API calls. The Dock's one-click sign-in sends an OAuth access token to openvibe.network and openvibe.chat as `Authorization: Bearer` (scopes `dock`, `activity`, `chat.read`) and keeps a refresh token on this device. |
+| Website content | **Yes** | The Dock reads the person's own agent view (the task line, the worked time, the stream's state) from openvibe.codes and frames the stream from openvibe.live; it is their own content, not the page's. On "Save its rating to OpenVibe Reviews": the business name, rating, scale, count of ratings and city the page states, in the address of the openvibe.reviews tab. On "Compare delivery apps": the restaurant or store name taken from the page title, to openvibe.food. On "Keep on my Rent board" and "Check the rent": the price, its currency, the city and region (never the street) and the bedrooms the listing states, in the address of the openvibe.rent tab. |
+| Authentication information | **Yes** | Only if the person connects the extension: the `cpx_` install token they pasted is sent to openvibe.coupons as `Authorization: Bearer` on its API calls. The Dock's one-click sign-in sends an OAuth access token to openvibe.network, openvibe.chat and openvibe.codes as `Authorization: Bearer` (scopes `dock`, `activity`, `chat.read`) and keeps a refresh token on this device. |
 | User activity | No | No clicks, keystrokes or scrolls are recorded. A report sends a code id, `worked`/`failed` and an optional reason the person chose, which is the person's own feedback. |
 | Financial and payment information | No | `lib/autoapply.js` reads the order total in the page to tell which codes lowered it; the total stays in the popup and is never sent. |
 | Personally identifiable information, health, personal communications, location | No | Not read. (The city sent with a rating is the business's, and with a listing the home's, from the page; never the person's.) |
@@ -47,4 +50,5 @@ these to the person at install. Nothing is optional, because nothing is collecte
 didn't press for, and the token is the person's own choice on the settings page.
 
 In Firefox, MV3 host permissions can be withheld at install; the settings page then shows "Allow
-access to openvibe.coupons".
+access to openvibe.coupons". The Dock needs its three OpenVibe origins at install; Firefox asks for
+them together with the extension.

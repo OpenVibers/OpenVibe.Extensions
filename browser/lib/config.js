@@ -1,9 +1,10 @@
 /*
  * OpenVibe Companion — configuration.
  *
- * API_ORIGIN is the ONLY origin this extension ever sends a request to. It must match the manifest's
- * host_permissions and the connect-src of its CSP; scripts/pack.js rewrites all three together for
- * a development build (--api http://localhost:4850) and test/manifest.test.js checks they agree.
+ * API_ORIGIN is where the Coupons API lives. It must match the manifest's host_permissions and the
+ * connect-src of its CSP; scripts/pack.js rewrites all three together for a development build
+ * (--api http://localhost:4850) and test/manifest.test.js checks they agree. NETWORK_ORIGIN,
+ * CHAT_ORIGIN and CODES_ORIGIN are the Dock's: its state, its Chats tab and its agent view.
  *
  * HANDOFF_ORIGINS are the sites the Companion may open a tab on when you press one of its buttons
  * (lib/handoff.js): the Rent board, a new Watch, Food's delivery comparison, and Reviews' page for saving the rating
@@ -31,6 +32,9 @@
         // origins the side panel may reach besides the API origin.
         NETWORK_ORIGIN: 'https://openvibe.network',
         CHAT_ORIGIN: 'https://openvibe.chat',
+        // CODES_ORIGIN is OpenVibe.Codes' API: the Dock's agent view (GET /api/v1/me/agent-view and the
+        // four controls), and the still Codes serves when nothing is live.
+        CODES_ORIGIN: 'https://openvibe.codes',
         // One-click Dock sign-in (OAuth public client, no secret). The redirect URI is the browser's own
         // extension URL; the exact values are also in the Network client row. A build whose runtime
         // identity.getRedirectURL() is not one of these refuses to sign in rather than send an

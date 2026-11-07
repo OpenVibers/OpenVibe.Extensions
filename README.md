@@ -2,9 +2,9 @@
 
 > OpenVibe's first-party client surfaces: today, the **OpenVibe Companion** browser extension.
 
-**Status:** alpha (roadmap Wave 18, client part). The extension builds, its tests pass, and Chromium
-loads the unpacked 0.3.0 build with no console or CSP errors (2026-10-15, Playwright's Chromium: branded Chrome no
-longer loads unpacked extensions from the command line). A development build of
+**Status:** alpha (roadmap Wave 18, client part). The extension builds, its tests pass, and headless
+Chrome loads the unpacked 0.9.0 build with no console or CSP errors (2026-11-07, Chrome 156 via
+CDP `Extensions.loadUnpacked`; the side panel's Agents tab draws the Dock's agent view against stubbed first parties, see the credential note below). A development build of
 the coupon part looked up codes and sent a report against a local OpenVibe.Coupons. Mozilla's
 `web-ext lint` (what addons.mozilla.org runs on upload) passes with no errors, warnings or notices
 and runs in CI; it hasn't been loaded in a running Firefox yet. It is **not published** to any
@@ -75,13 +75,13 @@ the Companion never rewrites links or adds referral tags.
 
 | | |
 |---|---|
-| **Permissions** | `activeTab`, `identity`, `scripting`, `storage`, and `sidePanel` in the Chrome build (Firefox's `sidebar_action` needs no permission of its own). The host permissions are the three OpenVibe origins: `https://openvibe.coupons/*` (the coupon API), `https://openvibe.network/*` (the Dock's state) and `https://openvibe.chat/*` (the Dock's Chats tab). `identity` starts the Dock's one-click OAuth sign-in (`chrome.identity.launchWebAuthFlow` / Firefox's `browser.identity`). `scripting` is used for four buttons: "Try these codes on this page" injects the packaged `lib/autoapply.js`, "Save its rating to OpenVibe Reviews" injects `lib/rating.js`, and "Keep on my Rent board" and "Check the rent" inject `lib/listing.js`, into the active tab (the access `activeTab` gives after you press the button), in its top frame and the extension's isolated world. |
+| **Permissions** | `activeTab`, `identity`, `scripting`, `storage`, and `sidePanel` in the Chrome build (Firefox's `sidebar_action` needs no permission of its own). The host permissions are four OpenVibe origins: `https://openvibe.coupons/*` (the coupon API), `https://openvibe.network/*` (the Dock's state), `https://openvibe.codes/*` (the Dock's agent view and its four controls) and `https://openvibe.chat/*` (the Dock's Chats tab). `identity` starts the Dock's one-click OAuth sign-in (`chrome.identity.launchWebAuthFlow` / Firefox's `browser.identity`). `scripting` is used for four buttons: "Try these codes on this page" injects the packaged `lib/autoapply.js`, "Save its rating to OpenVibe Reviews" injects `lib/rating.js`, and "Keep on my Rent board" and "Check the rent" inject `lib/listing.js`, into the active tab (the access `activeTab` gives after you press the button), in its top frame and the extension's isolated world. |
 | **Not requested** | `<all_urls>`, `tabs`, `cookies`, `webRequest`, `history`, optional permissions, content scripts, a background worker, web-accessible resources, `externally_connectable`. |
 | **Read from the page** | The active tab's **URL and title**, when you open the popup (that's what `activeTab` grants). The page's content only when you press "Try these codes on this page": `lib/autoapply.js` finds the coupon box, its Apply button and the order total, types the codes in, and returns to the popup which codes changed the total. It makes no request, reads no cookies or storage, and sends nothing anywhere; `test/manifest.test.js` scans it for that. On a review site, "Save its rating to OpenVibe Reviews" runs `lib/rating.js`, which only reads: the page's name, its rating, the scale, how many ratings, and the city from its structured data. "Keep on my Rent board" and "Check the rent" run `lib/listing.js`, which only reads: the price and its currency, the city and region (never the street) and the bedrooms, from the structured data, else the page's price tag. Browser pages, files, IP addresses and local names are "not a site", and nothing is sent or offered for them. |
-| **Sent by the extension** | To `https://openvibe.coupons` only, and only the **hostname** (`lib/host.js` drops the path, query, fragment, port and credentials first): `GET /api/v1/merchants/resolve?host=`, the merchant id (`GET /api/v1/merchants/:id/coupons`), and, when you report, the code id plus `worked` or `failed` with an optional reason. Every request goes with `credentials: 'omit'` (no cookies), `referrerPolicy: 'no-referrer'` and `redirect: 'error'`. |
+| **Sent by the extension** | The Coupons part sends to `https://openvibe.coupons` only, and only the **hostname** (`lib/host.js` drops the path, query, fragment, port and credentials first): `GET /api/v1/merchants/resolve?host=`, the merchant id (`GET /api/v1/merchants/:id/coupons`), and, when you report, the code id plus `worked` or `failed` with an optional reason. Every request goes with `credentials: 'omit'` (no cookies), `referrerPolicy: 'no-referrer'` and `redirect: 'error'`. The Dock sends the person's own bearer to `https://openvibe.network` (its state, `/api/v1/me/dock`), `https://openvibe.chat` (Chats), and, when the Agents tab needs it, `https://openvibe.codes` (the agent view and its controls). |
 | **Hand-offs (only when you press the button)** | "Keep on my Rent board", "Check the rent", "Watch this page", "Compare delivery apps" and "Save its rating to OpenVibe Reviews" open **a new tab you see** on `https://openvibe.rent/board`, `https://openvibe.rent/fair`, `https://openvibe.watch/watches/new`, `https://openvibe.food/delivery` or `https://openvibe.reviews/save`, with the page's address and title (and, for Reviews, the rating read from it; for Rent, the price, city and bedrooms read from it) in that tab's address. `lib/handoff.js` removes the credentials, the fragment and tracking parameters (`utm_*`, `fbclid`, `gclid`, …) first. The extension makes no request for it, nothing opens on its own, and nothing is saved until you save it on that site. `platform.tabs.open()` refuses any other origin, and the permission audit allows only `https://openvibe.<tld>` hand-off origins. |
 | **Stored** | The optional `cpx_` install token in `storage.local` (never synced); for the Dock, the one-click OAuth access token in `storage.session` (memory, cleared when the browser closes) and the rotating refresh token in `storage.local` (this device, not synced). A pasted 0.7.0 `networkToken` is still accepted as a fallback until a later release removes it. |
-| **CSP** | `default-src 'none'; script-src 'self'; connect-src https://openvibe.coupons; object-src 'none'`. There is no inline script, no remote code, no `eval`, and no `innerHTML`: the popup builds DOM nodes and sets text. |
+| **CSP** | `default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src https://openvibe.coupons https://openvibe.network https://openvibe.chat https://openvibe.codes; frame-src https://openvibe.live; object-src 'none'; base-uri 'none'`. The Dock draws its own styles in a `<style>` element (styles only; script stays `'self'`), the agent view shows its still from a local `blob:`, and its Live embed is the only frame. There is no inline script, no remote code, no `eval`, and no `innerHTML` in the extension's own code: the popup builds DOM nodes and sets text. |
 
 ### The credential: an install token, never a session
 
@@ -106,12 +106,20 @@ covered in Coupons' own tests: lookups are identical for every caller, and the A
 
 ### The Dock in the side panel
 
-The **OpenVibe Dock** — the pill, the card with its Agents, Chats and Activity tabs — sits in the
-browser's side panel (Chrome's `side_panel`, Firefox's `sidebar_action`), on every site. It is the
-released OpenVibe.Shared Dock, bundled under `browser/shared/` because the extension's CSP allows no
+The **OpenVibe Dock** — the pill, the card with its Vibe, Agents, Chats and Activity tabs — sits in
+the browser's side panel (Chrome's `side_panel`, Firefox's `sidebar_action`), on every site. It is the
+released OpenVibe.Shared Dock 4.124.0, bundled under `browser/shared/` because the extension's CSP allows no
 remote script, and it reads and writes the same state on the Network as the Dock on a site, so it
 opens where the person left off. It hands that state to the Dock as it opens (the page's tab, chat, agent and
 unread counts) and re-reads it every 30 s, so a change on the page reaches the open side panel.
+
+The Agents tab draws the person's own desk stream the same way a site's Dock does: the Live embed, the
+task line, and the owner's **Pause/Resume**, **Curtain now**, **Mute/Unmute** and **End** controls. The
+view is read with the person's token from OpenVibe.Codes (`GET /api/v1/me/agent-view`); the extension
+allows Codes and Live's embed for exactly that. Codes' normal session check does not yet accept the
+Dock's read-only OAuth token (issuer `<network>/dock`), so a production side panel keeps the view
+hidden until Codes or the Network accepts that credential; `scripts/check-panel.js` proves the bundled
+Dock itself draws it. Live's embed also allows first-party site origins, not an extension origin yet.
 
 It needs the person's own OpenVibe sign-in. Press **Sign in** in the panel or the settings page: the
 Network's account chooser opens, the extension is a public OAuth client (`companion`, PKCE S256, no
@@ -128,10 +136,12 @@ browser/
   manifest.json          MV3; Chromium (minimum_chrome_version 114) and Firefox (gecko id, strict_min_version 128)
   panel.html / panel.js  the Dock in the side panel: the Network's state, the same tabs as the Dock on a site
   panel.css             the Dock fills the panel (no floating card, no pill)
-  shared/               the released OpenVibe.Shared Dock (v4.57.0), bundled: the CSP allows no remote script
+  shared/               the released OpenVibe.Shared Dock 4.124.0, bundled: the CSP allows no remote script
+                        (dock.js, dock-vibe.js, dock-agent.js, dock-timer.js, action-center.js,
+                        notification-ui.js, notification-live.js, ov-mark.js, kit.css)
   popup.html / popup.js  DOM wiring only
   options.html / .js     connect (save a checked token), disconnect, grant the API host permission
-  lib/config.js          API_ORIGIN (the one origin it sends requests to); HANDOFF_ORIGINS (Rent, Watch, Food, Reviews)
+  lib/config.js          API_ORIGIN (Coupons), NETWORK_ORIGIN and CHAT_ORIGIN (the Dock), CODES_ORIGIN (its agent view); HANDOFF_ORIGINS (Rent, Watch, Food, Reviews)
   lib/host.js            URL → hostname (everything else dropped)
   lib/handoff.js         the Rent board, Watch, Food delivery and Reviews addresses, built from a cleaned URL; which sites are rentals and review sites
   lib/autoapply.js       "Try these codes on this page": injected into the active tab only when you press it
@@ -148,6 +158,7 @@ scripts/
   audit.js               the permission audit (manifest, CSP, pages)
   pack.js                zip for loading, or --stores: the Chrome and Firefox store zips (runs the audit first)
   check-autoapply.js     lib/autoapply.js on test/fixtures/checkout-*.html in headless Chrome (CDP, no dependencies)
+  check-panel.js         the unpacked extension in headless Chrome: the panel's Agents tab draws the agent view (CDP, no dependencies)
   icons.js               draws the icons (no dependencies)
 ```
 
@@ -159,13 +170,14 @@ npm test
 
 | Requirement | Test |
 |---|---|
-| The manifest permission audit fails if anything widens: extra permissions, `<all_urls>` or broader hosts, content scripts, a background worker, web-accessible resources, `externally_connectable`, optional permissions, `unsafe-eval`, remote script or connect sources, MV2. The API origin agrees across config, host permission and CSP. Pages have no inline or remote script. The code never uses cookies, scripting, dynamic code, HTML injection or `storage.sync`, and only `lib/api.js`, `lib/network-api.js` and `lib/auth.js` fetch. | `test/manifest.test.js` |
+| The manifest permission audit fails if anything widens: extra permissions, `<all_urls>` or broader hosts, content scripts, a background worker, web-accessible resources, `externally_connectable`, optional permissions, `unsafe-eval`, remote script or connect sources, any style source beyond `'unsafe-inline'`, any image beyond `'self' blob:`, any frame beyond Live, MV2. The first-party origins agree across config, host permissions and CSP. Pages have no inline or remote script. The code never uses cookies, scripting, dynamic code, HTML injection or `storage.sync`, and only `lib/api.js`, `lib/network-api.js`, `lib/auth.js` and the bundled Dock fetch. | `test/manifest.test.js` |
+| The side panel in a real headless Chrome: the unpacked extension opens `panel.html` on the Agents tab with a stubbed Network/Chat/Codes, and the agent view draws its stream frame, line, meta and Pause/Resume, Curtain now, Mute/Unmute and End, with its styles applied and no CSP refusal. Skipped when no Chrome is installed. | `test/panel.test.js` (`scripts/check-panel.js`) |
 | API client against a stub: routes; no `Authorization` without a token; never cookies, referrers or redirects; errors as codes (revoked, scope, 429, 503); timeouts; refused input. | `test/api-client.test.js` |
-| The extension never sends page content or URLs beyond the hostname. The popup controller runs on checkout URLs full of personal data, and every request the stub receives is inspected. Non-shop pages send nothing. Only `tabs.query` and `storage.local` are touched. Only `cpx_` tokens are stored. | `test/privacy.test.js` |
+| The Coupons part never sends page content or URLs beyond the hostname. The popup controller runs on checkout URLs full of personal data, and every request the stub receives is inspected. Non-shop pages send nothing. Only `tabs.query` and `storage.local` are touched, and only `cpx_` tokens are stored there. | `test/privacy.test.js` |
 | The hand-offs: nothing opens when the popup opens; a button opens one tab on openvibe.rent or openvibe.watch with the cleaned address (no credentials, fragment or tracking parameters); the Coupons API still gets the hostname only; `tabs.open` refuses other origins; rental sites lead with the board. | `test/handoff.test.js` |
 | `scripts/pack.js`: the zip is exactly `browser/`, audited and reproducible. A development build rewrites the origin in all three places. Remote `http` origins are refused. | `test/pack.test.js` |
 
-Beyond the automated tests, this was checked by hand on 2026-09-22:
+Beyond the automated tests, the coupon flow was checked by hand on 2026-09-22:
 
 - Headless Chrome 150, loaded through CDP `Extensions.loadUnpacked`, accepted the manifest and
   rendered both pages with no console errors or CSP violations.
@@ -173,7 +185,12 @@ Beyond the automated tests, this was checked by hand on 2026-09-22:
   configured. It resolved a shop, listed its code, and posted a report with a `cpx_` token. The
   report was stored with channel `extension`.
 
-That check is not in CI. Firefox hasn't been tried.
+On 2026-11-07 the same CDP load ran the side panel in headless Chrome 156 (now `test/panel.test.js`
+and `scripts/check-panel.js`): with a stubbed Network, Chat and Codes, `panel.html` opened on the
+Agents tab, drew the agent view's Live frame, task line and `Paused by @ada` meta, and showed
+Pause/Resume, Curtain now, Mute/Unmute and End, with the Dock's styles applied and no CSP refusal.
+The 2026-09-22 coupon flow is not in CI; the panel check is, and it skips when no Chrome is installed.
+Firefox hasn't been tried.
 
 ## Packing (never published from here)
 
@@ -198,7 +215,9 @@ shows "Allow access to openvibe.coupons".
 ## Before a store release (for the lead)
 
 1. **OpenVibe.Coupons is already public** (see its README; live at `https://openvibe.coupons` since
-   2026-10-09). The release build only talks to `https://openvibe.coupons`.
+   2026-10-09). The release build talks to `https://openvibe.coupons` for codes and to
+   `https://openvibe.network`, `https://openvibe.chat` and `https://openvibe.codes` for the Dock,
+   each named in the manifest and the CSP and nothing else.
 2. **Store listings:** `npm run pack:stores` builds `dist/openvibe-companion-<version>-chrome.zip`
    (no `browser_specific_settings`) and `-firefox.zip` (no `minimum_chrome_version`), byte for byte
    reproducible. Upload them with the fields in [store/listing.md](store/listing.md), the single
@@ -223,6 +242,14 @@ shows "Allow access to openvibe.coupons".
   - `GET /api/v1/merchants/:id/coupons`
   - `POST /api/v1/coupons/:id/report`
   - `cpx_` install tokens from `/connect-extension`
+- [OpenVibe.Codes](https://github.com/OpenVibers/OpenVibe.Codes) `/api/v1/me/agent-view` (the
+  Dock's agent view: the state, the still, and the pause, curtain, mute and end controls). Its
+  session check does not accept the Dock's `<network>/dock`-issued OAuth token yet, so the view is
+  bundled and verified against a stub but stays hidden in production until Codes or Network accepts
+  that credential.
+- [OpenVibe.Live](https://github.com/OpenVibers/OpenVibe.Live) `/embed/agent/<ags_id>?vt=…`, the
+  agent view's frame. Its `frame-ancestors` list is first-party site origins; an extension origin is
+  not on it yet.
 - No npm dependencies. Tests and scripts use Node's standard library.
 
 ---
