@@ -40,7 +40,7 @@
         // identity.getRedirectURL() is not one of these refuses to sign in rather than send an
         // unregistered redirect.
         OAUTH_CLIENT_ID: 'companion',
-        OAUTH_SCOPES: Object.freeze(['dock', 'activity', 'chat.read']),
+        OAUTH_SCOPES: Object.freeze(['dock', 'activity', 'chat.read', 'agent.view']),
         OAUTH_REDIRECT_URIS: Object.freeze([
             'https://bjcjcfcecpkkmfndegkjekoipdmbgakd.chromiumapp.org/',
             'https://bb6593a68b1dcfbb7acd9650f04a169f4c5b57a0.extensions.allizom.org/',

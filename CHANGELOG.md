@@ -4,6 +4,19 @@ The OpenVibe Companion's releases. Each one is a `browser/manifest.json` version
 release](https://github.com/OpenVibers/OpenVibe.Extensions/releases); older entries are in the git
 history.
 
+## 0.9.1 — 2026-11-07
+
+- **The side panel's agent view can read.** OpenVibe.Codes' two agent-view read routes now accept
+  the Companion's Dock token (Network's private `<network>/dock` issuer and keys, the new
+  `agent.view` scope only); the panel's four controls stay read-only and open openvibe.codes.
+  OpenVibe.Live's embed lists an extension origin when the owner sets
+  `AGENT_EMBED_EXTENSION_ORIGINS`.
+- When Live's frame is refused (Firefox, whose extension id changes per install, or Chrome before the
+  owner sets the id), the panel shows the still and a plain **Watch on openvibe.live** link instead of
+  an empty frame. A rendered embed announces itself (`postMessage`, carrying nothing), so a refused
+  frame is told apart from a loaded one.
+- The OAuth grant asks for `agent.view` alongside `dock`, `activity` and `chat.read`.
+
 ## 0.9.0 — 2026-11-07
 
 - **The side panel's Dock is the current released one.** `browser/shared/` moves from OpenVibe.Shared

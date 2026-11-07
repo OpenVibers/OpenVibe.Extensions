@@ -54,7 +54,7 @@ function fakeAuth({ mode = 'oauth', token = TOKEN } = {}) {
     const auth = {
         signIns: 0,
         status: async () => ({ mode, account: mode === 'oauth' ? { username: 'ada' } : null }),
-        scopes: async () => (mode === 'oauth' ? ['dock', 'activity', 'chat.read'] : null),
+        scopes: async () => (mode === 'oauth' ? ['dock', 'activity', 'chat.read', 'agent.view'] : null),
         account: async () => (mode === 'oauth' ? { username: 'ada' } : null),
         accessToken: async () => { if (mode === 'none') throw Object.assign(new Error('auth required'), { code: 'auth.required' }); return token; },
         signIn: async () => { auth.signIns++; mode = 'oauth'; },
@@ -74,7 +74,7 @@ function fakeAuth({ mode = 'oauth', token = TOKEN } = {}) {
             assert.strictEqual(out.mounted, true, 'the Dock is mounted');
             assert.strictEqual(dock.opened, 1, 'and opened');
             assert.strictEqual(await dock.mounted.token(), TOKEN, "with the person's sign-in");
-            assert.deepStrictEqual(dock.mounted.scopes, ['dock', 'activity', 'chat.read'], 'read-only scopes');
+            assert.deepStrictEqual(dock.mounted.scopes, ['dock', 'activity', 'chat.read', 'agent.view'], 'read-only scopes');
             assert.strictEqual(dock.mounted.me, 'ada', 'the account name');
             assert.strictEqual(dock.mounted.apiBase, 'https://openvibe.network', "the Network, where the Dock's state is");
             assert.strictEqual(dock.mounted.chatBase, 'https://openvibe.chat', 'and Chat, where the Chats tab reads');

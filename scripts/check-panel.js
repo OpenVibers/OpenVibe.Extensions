@@ -30,7 +30,12 @@ function extensionId(key) {
 }
 const EXT_ID = extensionId(MANIFEST.key);
 
-const TOKEN = 'test.' + Buffer.from(JSON.stringify({ sub: 'usr_test', username: 'ada' })).toString('base64url') + '.signature';
+/** The Companion's Dock token: private issuer, client companion, the read-only scopes (unverified, as the panel reads it). */
+const TOKEN = `${Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url')}.${Buffer.from(JSON.stringify({
+    iss: 'https://openvibe.network/dock', sub: 'usr_test', username: 'ada', client_id: 'companion',
+    scope: 'dock activity chat.read agent.view', fam: 'fam_0123456789abcdef01234567',
+})).toString('base64url')}.signature`;
+const FRAME = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0xff, 0xd9]);
 const AGENT_ID = 'ags_01JAB2C3D4E5F6G7H8J9K0MNPQ';
 const AGENT = {
     paused: true, paused_by: 'ada', paused_by_role: 'owner', mode: 'watch',
@@ -40,7 +45,7 @@ const AGENT = {
     started_at: new Date(Date.now() - 754000).toISOString(), ended_at: null,
     page_url: `https://openvibe.live/@ada/agents/${AGENT_ID}`,
     embed_url: `https://openvibe.live/embed/agent/${AGENT_ID}?vt=wvt_test_ticket`,
-    last_frame_url: null, voice_muted: true,
+    last_frame_url: 'https://openvibe.codes/api/v1/me/agent-view/frame', voice_muted: true,
 };
 const DOCK = {
     state: {
@@ -85,16 +90,21 @@ const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const json = (v) => ({ status: 200, type: 'application/json', body: JSON.stringify(v) });
 
 /** What the stubbed first parties answer. A route this file does not know gets an empty object, never a refusal. */
+let refuseFrame = false;
 function answer(url, method) {
     const u = new URL(url);
     const p = u.pathname;
     if (method === 'OPTIONS') return { status: 204, type: 'text/plain', body: '' };
     if (u.origin === 'https://openvibe.live') {
-        return { status: 200, type: 'text/html', body: '<!doctype html><html><body><p id="stub-embed">embed</p></body></html>' };
+        // A rendered embed announces itself to its parent (Live's agent-embed.js). With refuseFrame the page is
+        // served without that hello: what a browser shows a parent when `frame-ancestors` keeps the embed out.
+        const hello = refuseFrame ? '' : '<script>parent.postMessage({type:"ov-agent-embed",v:1},"*")</script>';
+        return { status: 200, type: 'text/html', body: `<!doctype html><html><body><p id="stub-embed">embed</p>${hello}</body></html>` };
     }
     if (u.origin === 'https://openvibe.network' && p === '/api/v1/me/dock') return json(DOCK);
     if (u.origin === 'https://openvibe.network' && p === '/api/v1/me/actions') return json({ items: [], counts: {} });
     if (u.origin === 'https://openvibe.codes' && p === '/api/v1/me/agent-view') return json({ agent: AGENT });
+    if (u.origin === 'https://openvibe.codes' && p === '/api/v1/me/agent-view/frame') return { status: 200, type: 'image/jpeg', body: FRAME };
     return json({});
 }
 
@@ -158,7 +168,7 @@ async function main() {
 
         await page.send('Page.navigate', { url: `chrome-extension://${EXT_ID}/panel.html` });
         for (let i = 0; i < 100 && (await evaluate(page, 'document.readyState')) !== 'complete'; i++) await pause(50);
-        await evaluate(page, `chrome.storage.session.set(${JSON.stringify({ dockAccess: { token: TOKEN, expires_at: Date.now() + 3600000, scope: 'dock activity chat.read', username: 'ada' } })}).then(() => true)`);
+        await evaluate(page, `chrome.storage.session.set(${JSON.stringify({ dockAccess: { token: TOKEN, expires_at: Date.now() + 3600000, scope: 'dock activity chat.read agent.view', username: 'ada' } })}).then(() => true)`);
         await evaluate(page, `chrome.storage.local.set(${JSON.stringify({ dockAccount: { username: 'ada', sub: 'usr_test' } })}).then(() => true)`);
         await page.send('Page.reload');
 
@@ -175,6 +185,8 @@ async function main() {
                     line: text(q('.ovda-line')),
                     meta: text(q('.ovda-meta')),
                     acts: [...document.querySelectorAll('.ovda-acts [data-act]')].map((b) => b.dataset.act + ':' + b.textContent.trim()),
+                    actLinks: [...document.querySelectorAll('.ovda-acts a[data-act]')].map((a) => a.getAttribute('href')),
+                    watch: (() => { const w = q('a.ovda-watch'); return w ? { hidden: w.hidden, text: w.textContent.trim() } : null; })(),
                     frame: (q('iframe.ovda-frame') || {}).src || null,
                     tab: text(q('[role="tab"][aria-selected="true"]')),
                     styles: !!document.getElementById('ovdk-styles') && !!document.getElementById('ovda-styles') && !!document.getElementById('ovac-styles'),
@@ -186,6 +198,29 @@ async function main() {
 
         for (let i = 0; i < 20 && !(paused.some((u) => u.startsWith('https://openvibe.live/embed/agent/')) && paused.some((u) => u.startsWith('https://openvibe.codes/api/v1/me/agent-view'))); i++) await pause(100);
 
+        // A frame the browser refuses: the embed never says hello, so the panel shows the still and the plain link
+        // instead of an empty frame, and the four controls are links to Codes (the panel's token is read-only).
+        refuseFrame = true;
+        await page.send('Page.reload');
+        let fallback = null;
+        for (let i = 0; i < 100; i++) {
+            await pause(100);
+            fallback = await evaluate(page, `(() => {
+                const q = (s) => document.querySelector(s);
+                const f = q('iframe.ovda-frame');
+                const w = q('a.ovda-watch');
+                const s = q('img.ovda-still');
+                return {
+                    agent: !!q('.ovda.on'),
+                    frame: f ? f.src : null,
+                    frameShown: f ? getComputedStyle(f).display !== 'none' : false,
+                    watch: w ? { hidden: w.hidden, text: w.textContent.trim(), href: w.href } : null,
+                    still: s ? s.src : null,
+                };
+            })()`);
+            if (fallback && fallback.agent && fallback.watch && !fallback.watch.hidden && fallback.still) break;
+        }
+
         const failures = [];
         if (!seen || !seen.dock) failures.push('the panel did not mount the Dock');
         if (!seen || !seen.gateHidden) failures.push('the sign-in gate stayed up with a signed-in Dock');
@@ -196,13 +231,22 @@ async function main() {
         if (seen && !/2 watching/.test(seen.meta || '')) failures.push(`the meta does not say how many watch: "${seen.meta}"`);
         const wantActs = ['pause:Resume', 'curtain:Curtain now', 'mute:Unmute', 'end:End'];
         if (seen && JSON.stringify(seen.acts) !== JSON.stringify(wantActs)) failures.push(`the four controls are ${JSON.stringify(seen.acts)}`);
+        if (seen && seen.actLinks.length !== 4) failures.push(`the read-only controls are not links: ${JSON.stringify(seen.actLinks)}`);
+        if (seen && seen.actLinks.some((href) => href !== 'https://openvibe.codes')) failures.push(`a control does not open Codes: ${JSON.stringify(seen.actLinks)}`);
         if (seen && seen.frame !== AGENT.embed_url) failures.push(`the stream frame is "${seen.frame}"`);
         if (seen && !seen.styles) failures.push("the Dock's own styles are missing");
         if (seen && seen.lineDisplay !== 'flex') failures.push(`the agent's styles did not apply (line display ${seen.lineDisplay})`);
         if (security.length) failures.push(`CSP refused: ${security.join(' | ')}`);
         if (!paused.some((u) => u.startsWith('https://openvibe.live/embed/agent/'))) failures.push('the panel never asked for the agent embed');
         if (!paused.some((u) => u.startsWith('https://openvibe.codes/api/v1/me/agent-view'))) failures.push('the panel never asked Codes for the agent view');
-        return { failures, staged: paused.length, seen };
+        // The refused frame: the still, the plain link, and no empty frame.
+        if (!fallback || !fallback.agent) failures.push('the panel did not draw the agent view with a refused frame');
+        if (fallback && fallback.frameShown) failures.push('a refused frame stayed on screen');
+        if (fallback && (!fallback.watch || fallback.watch.hidden)) failures.push('a refused frame has no "Watch on openvibe.live" link');
+        else if (fallback && fallback.watch.text !== 'Watch on openvibe.live') failures.push(`the watch link says "${fallback.watch.text}"`);
+        else if (fallback && fallback.watch.href !== AGENT.page_url) failures.push(`the watch link opens "${fallback.watch.href}"`);
+        if (fallback && !fallback.still) failures.push('a refused frame shows no still');
+        return { failures, staged: paused.length, seen, fallback };
     } finally {
         if (page) page.close();
         proc.kill();
