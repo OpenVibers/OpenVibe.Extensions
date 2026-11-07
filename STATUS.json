@@ -5,17 +5,17 @@
   "wave": "W18",
   "plan": "OpenVibe End-to-End Realignment & Implementation Plan, revision 3 (20 Sep 2026)",
   "adr": "OpenVibe.Contracts ADR-023 (first-party client surfaces)",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "surfaces": {
     "browser": {
       "name": "OpenVibe Companion",
-      "version": "0.8.1",
+      "version": "0.9.0",
       "manifest": 3,
       "targets": [
         "chromium >= 114",
         "firefox >= 128"
       ],
-      "api": "https://openvibe.coupons (OpenVibe.Coupons public API), https://openvibe.network (the Dock's state), https://openvibe.chat (the Dock's Chats tab)",
+      "api": "https://openvibe.coupons (OpenVibe.Coupons public API), https://openvibe.network (the Dock's state), https://openvibe.chat (the Dock's Chats tab), https://openvibe.codes (the Dock's agent view and its four controls); the agent embed is framed from https://openvibe.live",
       "permissions": [
         "activeTab",
         "identity",
@@ -26,11 +26,12 @@
       "hostPermissions": [
         "https://openvibe.coupons/*",
         "https://openvibe.network/*",
+        "https://openvibe.codes/*",
         "https://openvibe.chat/*"
       ],
       "credential": "optional cpx_ install token (coupons.lookup, coupons.report); the Dock one-click OAuth public client (scopes dock, activity, chat.read; access in storage.session, rotating refresh in storage.local); the 0.7.0 pasted OpenVibe token is still accepted as a fallback until a later release",
       "publishedToStores": false,
-      "loadedInChrome": "yes: headless Chromium loads the build (popup and options render, no console errors); lib/autoapply.js passes three fixture checkout pages in headless Chrome; the one-click Dock sign-in is covered by test/auth.test.js",
+      "loadedInChrome": "yes: headless Chrome 156 loads the 0.9.0 build via CDP Extensions.loadUnpacked; the side panel's Agents tab draws the Dock's agent view against a stubbed Network/Chat/Codes (the Live stream frame, the task line and meta, and Pause/Resume, Curtain now, Mute/Unmute and End) with its styles applied and no CSP refusal (scripts/check-panel.js); lib/autoapply.js passes three fixture checkout pages in headless Chrome; the one-click Dock sign-in is covered by test/auth.test.js",
       "loadedInFirefox": "not yet loaded in a browser; Mozilla's web-ext lint (8.10.0, what AMO runs on upload) passes with 0 errors, 0 warnings and 0 notices, and runs in CI with warnings as errors",
       "handoffs": [
         "https://openvibe.rent/board (keep a listing)",
@@ -43,19 +44,21 @@
       "storeListing": "store/ (listing, privacy and permission answers, screenshot plan); support URL https://openvibe.coupons/companion",
       "features": [
         "OpenVibe Dock one-click sign-in: public OAuth client companion (PKCE S256, no secret), read-only scopes dock/activity/chat.read, access token in storage.session, rotating refresh token in storage.local, Sign out revokes the family, the account page lists it under Signed-in apps",
-        "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock (v4.57.0) bundled under browser/shared/, reading and writing the same Network state as the Dock on a site, with the same tabs (Agents, Chats, Activity), and re-reading it every 30 s so the page, the pop-out and the panel agree; approvals/sends are hidden with the read-only scopes"
+        "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock 4.124.0 bundled under browser/shared/ (dock.js, dock-vibe.js, dock-agent.js, dock-timer.js, action-center.js, notification-ui.js, notification-live.js, ov-mark.js, kit.css), reading and writing the same Network state as the Dock on a site, with the same tabs (Vibe, Agents, Chats, Activity), and re-reading it every 30 s so the page, the pop-out and the panel agree; the Agents tab draws the person's agent view with Pause/Resume, Curtain now, Mute/Unmute and End, and approvals/sends are hidden with the read-only scopes"
       ],
       "pending": [
         "owner: create the Chrome Web Store and AMO developer listings and upload the store zips with store/'s answers and screenshots; the Chrome id is fixed by browser/manifest.json key",
         "Firefox: the extension loaded and run in a real Firefox (web-ext lint passes; nothing has run it yet)",
-        "use: on 2026-10-22 OpenVibe.Coupons had issued no install token and received no code report; it held 169 codes for 16 of its 37 merchants, all from the DealNews feed through OpenVibe.Sources"
+        "use: on 2026-10-22 OpenVibe.Coupons had issued no install token and received no code report; it held 169 codes for 16 of its 37 merchants, all from the DealNews feed through OpenVibe.Sources",
+        "Codes/Live credential: the Dock's agent view now asks OpenVibe.Codes with the one-click OAuth token, but Codes' session check refuses the <network>/dock issuer, and Live's embed frame-ancestors allows first-party sites but not an extension origin; the view is bundled and verified against a stub, and needs one of those two to accept the extension before it shows in production"
       ]
     }
   },
   "pending": [
     "owner: create the Chrome Web Store and AMO developer listings and upload the store zips with store/'s answers and screenshots; the Chrome id is fixed by browser/manifest.json key",
     "Firefox: the extension loaded and run in a real Firefox (web-ext lint passes; nothing has run it yet)",
-    "use: on 2026-10-22 OpenVibe.Coupons had issued no install token and received no code report; it held 169 codes for 16 of its 37 merchants, all from the DealNews feed through OpenVibe.Sources"
+    "use: on 2026-10-22 OpenVibe.Coupons had issued no install token and received no code report; it held 169 codes for 16 of its 37 merchants, all from the DealNews feed through OpenVibe.Sources",
+    "Codes/Live credential: the Dock's agent view now asks OpenVibe.Codes with the one-click OAuth token, but Codes' session check refuses the <network>/dock issuer, and Live's embed frame-ancestors allows first-party sites but not an extension origin; the view is bundled and verified against a stub, and needs one of those two to accept the extension before it shows in production"
   ],
   "deployed": false,
   "features": [
@@ -64,10 +67,10 @@
     "watches a page on OpenVibe.Watch, and compares delivery apps on OpenVibe.Food",
     "saves a review site's stated rating to OpenVibe.Reviews (read only when pressed, only on those sites)",
     "an optional cpx_ install token, never an OpenVibe session; and the Dock one-click OAuth sign-in (scopes dock, activity, chat.read; access in storage.session, rotating refresh in storage.local; the 0.7.0 pasted token is still a fallback until a later release)",
-    "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock (v4.57.0) bundled under browser/shared/, reading and writing the same Network state as the Dock on a site, with the same tabs (Agents, Chats, Activity), and re-reading it every 30 s so the page, the pop-out and the panel agree; approvals/sends are hidden with the read-only scopes",
+    "the OpenVibe Dock in the side panel (Chrome side_panel, Firefox sidebar_action): the released OpenVibe.Shared Dock 4.124.0 bundled under browser/shared/ (dock.js, dock-vibe.js, dock-agent.js, dock-timer.js, action-center.js, notification-ui.js, notification-live.js, ov-mark.js, kit.css), reading and writing the same Network state as the Dock on a site, with the same tabs (Vibe, Agents, Chats, Activity), and re-reading it every 30 s so the page, the pop-out and the panel agree; the Agents tab draws the person's agent view with Pause/Resume, Curtain now, Mute/Unmute and End, and approvals/sends are hidden with the read-only scopes",
     "store-ready: reproducible Chrome and Firefox store zips (npm run pack:stores), listing and privacy answers in store/, Mozilla web-ext lint in CI",
     "kiosk companion (Firefox new-tab page and history bridge for Live's /kiosk), moved from OpenVibe.Live",
     "hardware/: the Raspberry Pi streamer and controller scripts, moved from OpenVibe.Live"
   ],
-  "updated": "2026-11-06"
+  "updated": "2026-11-07"
 }

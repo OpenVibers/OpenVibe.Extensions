@@ -65,7 +65,9 @@
         grid: '<rect x="4" y="4" width="6.6" height="6.6" rx="1.6"/><rect x="13.4" y="4" width="6.6" height="6.6" rx="1.6"/><rect x="4" y="13.4" width="6.6" height="6.6" rx="1.6"/><rect x="13.4" y="13.4" width="6.6" height="6.6" rx="1.6"/>',
         pulse: '<path d="M3 12.5h4.2l2.3-5.5 4.2 10.5 2.3-5h4.9"/>',
         check: '<path d="M5 12.6l4.6 4.6L19 7.6"/>',
-        bell: '<path d="M6.2 16.2V11a5.8 5.8 0 0 1 11.6 0v5.2l1.6 2H4.6z"/><path d="M10 20.2a2.1 2.1 0 0 0 4 0"/>',
+        bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15ZM10 20a2 2 0 0 0 4 0"/>',
+        // The set's solid bell (openvibe-shared/glyphs): shown where the person prefers solid icons (4.71.0).
+        bellSolid: '<path d="M5.8 16.2V11a6.2 6.2 0 0 1 12.4 0v5.2l1.7 2.3H4.1ZM9.9 19.6h4.2a2.1 2.1 0 0 1-4.2 0Z"/>',
         key: '<circle cx="8.2" cy="14.8" r="4"/><path d="M11.1 12l8.2-8.2M16.4 6.7l2.3 2.3M14.2 8.9l1.8 1.8"/>',
         spark: '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9-1.9 5.1-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.4 15.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/>',
     };
@@ -116,7 +118,7 @@
             @keyframes ovn-bell-ring { 0%{ transform: rotate(0); } 12%{ transform: rotate(13deg); } 24%{ transform: rotate(-12deg); } 36%{ transform: rotate(8deg); } 48%{ transform: rotate(-4deg); } 60%{ transform: rotate(0); } }
             @keyframes ovn-panel-in { from { transform: translateY(-8px); opacity: 0; } to { transform: none; opacity: 1; } }
             @keyframes ovn-sheet-up { from { transform: translateY(48px); opacity: .5; } to { transform: none; opacity: 1; } }
-            @keyframes ovn-spin { to { transform: rotate(360deg); } }
+            @keyframes ovn-hop { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-4px); opacity: 1; } }
 
             /* Toasts. Opaque cards on the theme's raised surface; held (hidden, timers paused) while a menu is open. */
             .openvibe-toast-container { position: fixed; z-index: 2147482600; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
@@ -164,7 +166,8 @@
             .ovn-chip.sev { color: color-mix(in srgb, var(--ovn-tone) 50%, var(--text-primary, #ececf1)); background: color-mix(in srgb, var(--ovn-tone) 14%, transparent); border-color: transparent; text-transform: uppercase; letter-spacing: .03em; font-size: 10px; }
 
             .openvibe-bell { position: relative; cursor: pointer; padding: 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; }
-            .openvibe-bell svg { width: 22px; height: 22px; fill: none; stroke: var(--text-secondary, #b0b0b8); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: stroke .2s; }
+            html[data-ov-icons=solid] .openvibe-bell svg.has-s { stroke-width: 0; } html[data-ov-icons=solid] .openvibe-bell svg > .ovg-s { display: inline; fill: currentColor; stroke: none; } .openvibe-bell svg > .ovg-s { display: none; }
+            .openvibe-bell svg { color: var(--text-secondary, #b0b0b8); width: 22px; height: 22px; fill: none; stroke: var(--text-secondary, #b0b0b8); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: stroke .2s; }
             .openvibe-bell:hover svg, .openvibe-bell.open svg { stroke: var(--accent-light, var(--accent, #60a5fa)); }
             .openvibe-bell:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
             .openvibe-bell .badge { position: absolute; top: 1px; right: 0; min-width: 17px; height: 17px; padding: 0 5px; box-sizing: border-box; background: var(--live-red, #e5484d); color: #fff; border-radius: 999px;
@@ -280,7 +283,9 @@
             .openvibe-nv-empty b { display: block; font-size: 15px; color: var(--text-primary, #ececf1); margin-bottom: 4px; }
             .openvibe-nv-more { display: flex; justify-content: center; padding: 12px; }
             .openvibe-nv-more button { border: 1px solid var(--border, rgba(255,255,255,.1)); background: transparent; color: var(--text-secondary, #b6b6c0); font: inherit; font-size: 12.5px; padding: 7px 16px; border-radius: 999px; cursor: pointer; }
-            .openvibe-nv-more .spinner { width: 18px; height: 18px; border: 2px solid var(--border, rgba(255,255,255,.12)); border-top-color: var(--accent, #3b82f6); border-radius: 50%; animation: ovn-spin .8s linear infinite; }
+            .openvibe-nv-more .spinner { position: relative; display: inline-block; width: 6px; height: 6px; margin: 0 10px; border: 0; border-radius: 50%; background: var(--accent, #3b82f6); animation: ovn-hop 1s ease-in-out .15s infinite; }
+            .openvibe-nv-more .spinner::before, .openvibe-nv-more .spinner::after { content: ''; position: absolute; top: 0; width: 6px; height: 6px; border-radius: 50%; background: inherit; animation: ovn-hop 1s ease-in-out infinite; }
+            .openvibe-nv-more .spinner::before { left: -10px; } .openvibe-nv-more .spinner::after { left: 10px; animation-delay: .3s; }
             .openvibe-nv-foot { padding: 10px 16px; border-top: 1px solid var(--border, rgba(255,255,255,.08)); font-size: 12px; color: var(--text-muted, #8b8b96); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
             .openvibe-nv-foot a { color: var(--accent-light, var(--accent, #60a5fa)); text-decoration: none; font-weight: 650; }
             .openvibe-nv-note { font-size: 12px; color: var(--text-secondary, #b6b6c0); padding: 8px 16px; background: color-mix(in srgb, var(--warning, #f5a524) 12%, transparent); }
@@ -783,7 +788,7 @@
         const bell = document.createElement('div');
         bell.className = 'openvibe-bell';
         bell.setAttribute('role', 'button'); bell.setAttribute('aria-label', 'Notifications'); bell.tabIndex = 0;
-        bell.innerHTML = `${svg(GLYPH.bell)}<span class="badge hidden">0</span>`;
+        bell.innerHTML = `<svg class="ovnav-ovg has-s" viewBox="0 0 24 24" aria-hidden="true">${GLYPH.bell}<g class="ovg-s">${GLYPH.bellSolid}</g></svg><span class="badge hidden">0</span>`;
         bell.addEventListener('click', () => togglePanel());
         bell.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePanel(); } });
         _bellEl = bell;

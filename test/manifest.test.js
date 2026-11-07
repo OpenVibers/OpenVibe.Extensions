@@ -11,16 +11,16 @@ const { check, done } = require('./helpers/harness');
 
 const DIR = path.join(__dirname, '..', 'browser');
 const ORIGIN = 'https://openvibe.coupons';
-const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat'];
+const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes'];
 
 (async () => {
     const { manifest, origin, problems } = auditDir(DIR);
 
-    await check('the shipped manifest passes the audit: activeTab + identity + scripting + storage + sidePanel, three OpenVibe host permissions, MV3', async () => {
+    await check('the shipped manifest passes the audit: activeTab + identity + scripting + storage + sidePanel, four OpenVibe host permissions, MV3', async () => {
         assert.deepStrictEqual(problems, []);
         assert.strictEqual(origin, ORIGIN);
         assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'identity', 'scripting', 'storage']);
-        assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.chat/*']);
+        assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*']);
         assert.strictEqual(manifest.sidebar_action.default_panel, 'panel.html', 'the Dock lives in the side panel');
         for (const k of ['content_scripts', 'background', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
             assert.ok(!(k in manifest), `${k} must not be present`);
@@ -90,7 +90,10 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
 
     await check('the API origin agrees across lib/config.js, host_permissions and the CSP connect-src', async () => {
         const csp = manifest.content_security_policy.extension_pages;
-        assert.match(csp, /connect-src https:\/\/openvibe\.coupons https:\/\/openvibe\.network https:\/\/openvibe\.chat;/);
+        assert.match(csp, /connect-src https:\/\/openvibe\.coupons https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes;/);
+        assert.match(csp, /style-src 'self' 'unsafe-inline';/);
+        assert.match(csp, /img-src 'self' blob:;/);
+        assert.match(csp, /frame-src https:\/\/openvibe\.live;/);
         assert.strictEqual(auditManifest(manifest, { apiOrigin: 'https://evil.example.net' }).length > 0, true, 'another origin is caught');
     });
 

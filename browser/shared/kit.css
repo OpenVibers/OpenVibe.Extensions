@@ -24,13 +24,62 @@
     --ovk-ok: var(--success, #22c55e);
     --ovk-warn: var(--warning, #f59e0b);
     --ovk-bad: var(--danger, var(--error, #ef4444));
-    --ovk-live: var(--live-red, #ef4444);
-    --ovk-radius: 14px;
-    --ovk-radius-sm: 10px;
+    /* Status in words (4.83.0): a theme's -text status colours are its readable ones; the fills above are for shapes. On
+     * a light theme the fill green or amber on white was about 2:1 (openvibe.design/kit's "paid" and "expiring"). */
+    --ovk-ok-text: var(--success-text, var(--ovk-ok));
+    --ovk-warn-text: var(--warning-text, var(--ovk-warn));
+    --ovk-bad-text: var(--danger-text, var(--ovk-bad));
+    --ovk-live: color-mix(in srgb, var(--live-red, #ef4444) 80%, #000); /* a badge fill under white text: 5.5:1 on #ef4444's 80%, 3.8:1 bare */
+    /* Shape and elevation (4.81.0, plan L45 step 2): the kit's corners and shadows as tokens a look can set, so a theme
+     * has a shape as well as colours. The defaults are the kit's own corners and shadows; the personalities follow. */
+    --ov-radius-1: 10px;   /* chips, inputs, rows, small buttons */
+    --ov-radius-2: 14px;   /* cards, sections, panels */
+    --ov-radius-3: 20px;   /* sheets, dialogs, big surfaces */
+    --ov-elev-1: 0 1px 3px rgba(0, 0, 0, .35);           /* a knob, a chip that sits on its surface */
+    --ov-elev-2: 0 10px 24px -18px rgba(0, 0, 0, .7);    /* a bar that has scrolled content under it */
+    --ov-elev-3: 0 14px 32px rgba(0, 0, 0, .4);          /* a menu or popover above the page */
+    /* Motion (4.82.0): the same tokens ov-fx.js has always set, here so every page's var(--ov-dur-*) resolves and the
+     * person's Reduced motion reaches every transition that uses them, not only pages with effects. */
+    --ov-dur-1: .12s;
+    --ov-dur-2: .2s;
+    --ov-dur-3: .32s;
+    --ov-dur-4: .52s;
+    --ov-ease-out: cubic-bezier(.2, .8, .2, 1);
+    --ov-ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+    --ov-ease-in-out: cubic-bezier(.65, 0, .35, 1);
+    --ovk-radius: var(--ov-radius-2);
+    --ovk-radius-sm: var(--ov-radius-1);
     --ovk-tap: 44px;
     --ovk-top: var(--ovnav-real-h, 52px);          /* the navbar's height: sticky things stop under it */
     --ovk-bottom: var(--ovnav-appbar-h, 0px);      /* the app bar's height on phones (navbar.js sets it) */
     --ovk-font: var(--ov-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
+}
+
+/* Motion feels, as ov-fx.js sets them: the calm looks are slower and never overshoot, the loud ones quicker; the
+ * person's Reduced motion, or a device that asks for less, stops every token-timed transition. */
+:is([data-theme=paper], [data-theme=daylight], [data-theme=cloud], [data-theme=snow], [data-theme=sand], [data-theme=rose], [data-theme=meadow], [data-theme=peach], [data-theme=lavender], [data-theme=dawn], [data-theme=solarized-light], [data-theme=catppuccin-latte], [data-theme=nord], [data-theme=nord-light]) {
+    --ov-dur-1: .15s; --ov-dur-2: .25s; --ov-dur-3: .4s; --ov-dur-4: .62s; --ov-ease-spring: var(--ov-ease-out);
+}
+:is([data-theme=neon-tokyo], [data-theme=vapor], [data-theme=matrix], [data-theme=hacker], [data-theme=high-contrast], [data-theme=dracula], [data-theme=monokai], [data-theme=abyss]) {
+    --ov-dur-1: .09s; --ov-dur-2: .15s; --ov-dur-3: .24s; --ov-dur-4: .42s; --ov-ease-spring: cubic-bezier(.3, 1.8, .6, 1);
+}
+html[data-ov-motion=reduced] { --ov-dur-1: 0s; --ov-dur-2: 0s; --ov-dur-3: 0s; --ov-dur-4: 0s; }
+/* :root:root outranks ov-fx.js's own :root and theme feels, which load later. */
+@media (prefers-reduced-motion: reduce) { :root:root { --ov-dur-1: 0s; --ov-dur-2: 0s; --ov-dur-3: 0s; --ov-dur-4: 0s; } }
+/* Shape personalities (plan L45: "Paper is quiet and square, Neon glows and bounces"). A quiet look has square corners
+ * and lies flat, with a hairline where a shadow would be; a loud one is round and its raised things glow in its accent.
+ * The ids are Network's theme catalog (as ov-fx.js's motion feels); any other look keeps the defaults above. */
+:is([data-theme=paper], [data-theme=solarized-light], [data-theme=nord], [data-theme=nord-light], [data-theme=matrix], [data-theme=hacker], [data-theme=high-contrast]) {
+    --ov-radius-1: 4px; --ov-radius-2: 6px; --ov-radius-3: 10px;
+    --ov-elev-1: 0 0 0 1px var(--ovk-line);
+    --ov-elev-2: 0 1px 0 var(--ovk-line);
+    --ov-elev-3: 0 0 0 1px var(--ovk-line), 0 8px 18px -12px rgba(0, 0, 0, .35);
+}
+:is([data-theme=neon-tokyo], [data-theme=vapor]) {
+    --ov-radius-1: 14px; --ov-radius-2: 20px; --ov-radius-3: 28px;
+    --ov-elev-1: 0 0 8px color-mix(in srgb, var(--ovk-accent) 40%, transparent);
+    --ov-elev-2: 0 10px 28px -14px color-mix(in srgb, var(--ovk-accent) 55%, transparent);
+    --ov-elev-3: 0 0 0 1px color-mix(in srgb, var(--ovk-accent) 40%, transparent), 0 18px 44px -14px color-mix(in srgb, var(--ovk-accent) 55%, transparent);
 }
 
 /* Heading and paragraph rules double their class (.ovk-section.ovk-section > h2): a site's own ".site h2" has the same
@@ -45,36 +94,36 @@
 .ovk-page--wide { max-width: 1280px; }
 
 /* ── Buttons ── */
-.ovk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; min-height: var(--ovk-tap); padding: 10px 18px; border-radius: 12px; border: 1px solid transparent; font: inherit; font-weight: 700; font-size: .95rem; line-height: 1.2; text-decoration: none; cursor: pointer; transition: filter .12s, border-color .12s, background .12s; }
+.ovk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; min-height: var(--ovk-tap); padding: 10px 18px; border-radius: calc(var(--ov-radius-1) + 2px); border: 1px solid transparent; font: inherit; font-weight: 700; font-size: .95rem; line-height: 1.2; text-decoration: none; cursor: pointer; transition: filter .12s, border-color .12s, background .12s; }
 .ovk-btn--primary { background: var(--ovk-fill); color: var(--ovk-on-fill); }
 .ovk-btn--primary:hover { filter: brightness(1.08); }
 .ovk-btn--quiet { background: var(--ovk-panel); color: var(--ovk-text); border-color: var(--ovk-line); }
 .ovk-btn--quiet:hover { border-color: var(--ovk-accent); }
 .ovk-btn--ghost { background: transparent; color: var(--ovk-accent); padding-left: 8px; padding-right: 8px; }
-.ovk-btn--danger { background: transparent; color: var(--ovk-bad); border-color: color-mix(in srgb, var(--ovk-bad) 45%, transparent); }
+.ovk-btn--danger { background: transparent; color: var(--ovk-bad-text); border-color: color-mix(in srgb, var(--ovk-bad) 45%, transparent); }
 .ovk-btn--danger:hover { background: color-mix(in srgb, var(--ovk-bad) 12%, transparent); }
 .ovk-btn--small { min-height: 36px; padding: 6px 13px; border-radius: 999px; font-size: .88rem; }
 .ovk-btn:focus-visible, .ovk-icon-btn:focus-visible, .ovk-go:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: 2px; }
 .ovk-btn[disabled] { opacity: .55; cursor: default; filter: none; }
-.ovk-icon-btn { display: inline-grid; place-items: center; box-sizing: border-box; width: 40px; height: 40px; flex: none; padding: 0; border-radius: 12px; border: 1px solid transparent; background: transparent; color: var(--ovk-muted); font: inherit; cursor: pointer; text-decoration: none; list-style: none; }
+.ovk-icon-btn { display: inline-grid; place-items: center; box-sizing: border-box; width: 40px; height: 40px; flex: none; padding: 0; border-radius: calc(var(--ov-radius-1) + 2px); border: 1px solid transparent; background: transparent; color: var(--ovk-muted); font: inherit; cursor: pointer; text-decoration: none; list-style: none; }
 .ovk-icon-btn::-webkit-details-marker { display: none; }
 .ovk-icon-btn:hover { color: var(--ovk-text); background: var(--ovk-panel-2); border-color: var(--ovk-line); }
 .ovk-icon-btn[hidden] { display: none; }
-.ovk-icon-btn.is-done { color: var(--ovk-ok); }
-.ovk-icon-btn--danger:hover { color: var(--ovk-bad); }
+.ovk-icon-btn.is-done { color: var(--ovk-ok-text); }
+.ovk-icon-btn--danger:hover { color: var(--ovk-bad-text); }
 .ovk-icon-btn .ovk-i { width: 20px; height: 20px; }
 @media (pointer: coarse) { .ovk-icon-btn { width: var(--ovk-tap); height: var(--ovk-tap); } }
-.ovk-badge { display: inline-flex; align-items: center; flex: none; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--ovk-line); font-size: .7rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--ovk-muted); white-space: nowrap; }
+.ovk-badge { display: inline-flex; align-items: center; flex: none; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--ovk-line); font-size: .75rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--ovk-muted); white-space: nowrap; }
 .ovk-badge--accent { color: var(--ovk-accent); border-color: color-mix(in srgb, var(--ovk-accent) 50%, transparent); }
-.ovk-badge--ok { color: var(--ovk-ok); border-color: color-mix(in srgb, var(--ovk-ok) 50%, transparent); }
-.ovk-badge--warn { color: var(--ovk-warn); border-color: color-mix(in srgb, var(--ovk-warn) 50%, transparent); }
-.ovk-badge--bad { color: var(--ovk-bad); border-color: color-mix(in srgb, var(--ovk-bad) 50%, transparent); }
+.ovk-badge--ok { color: var(--ovk-ok-text); border-color: color-mix(in srgb, var(--ovk-ok) 50%, transparent); }
+.ovk-badge--warn { color: var(--ovk-warn-text); border-color: color-mix(in srgb, var(--ovk-warn) 50%, transparent); }
+.ovk-badge--bad { color: var(--ovk-bad-text); border-color: color-mix(in srgb, var(--ovk-bad) 50%, transparent); }
 .ovk-badge--live { color: #fff; background: var(--ovk-live); border-color: transparent; }
 .ovk-dot { display: inline-grid; place-items: center; flex: none; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: var(--ovk-fill); color: var(--ovk-on-fill); font-size: .72rem; font-weight: 800; }
 
 /* ── The head: back, title and one line, icon actions; its tabs under it; sticky under the navbar ── */
 .ovk-head { position: sticky; top: var(--ovk-top); z-index: 40; margin: 0 -16px 12px; padding: 6px 16px 0; background: color-mix(in srgb, var(--ovk-bg) 88%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid transparent; transition: border-color .2s, box-shadow .2s; }
-.ovk-scrolled .ovk-head { border-bottom-color: var(--ovk-line); box-shadow: 0 10px 24px -18px rgba(0, 0, 0, .7); }
+.ovk-scrolled .ovk-head { border-bottom-color: var(--ovk-line); box-shadow: var(--ov-elev-2); }
 .ovk-head--static { position: static; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .ovk-head-row { display: flex; align-items: center; gap: 6px; min-height: 48px; padding-bottom: 6px; }
 .ovk-head-row > .ovk-back { margin-left: -8px; }
@@ -115,8 +164,9 @@
 .ovk-row--unread .ovk-row-sub { color: var(--ovk-text); }
 .ovk-row-trail { display: flex; align-items: center; gap: 2px; flex: none; }
 .ovk-row-trail form { display: flex; align-items: center; gap: 2px; margin: 0; }
-.ovk-row-trail select { max-width: 9.5em; padding: 5px 6px; border-radius: 8px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: .86rem; }
-.ovk-mark { --ovk-mark: 40px; flex: none; display: inline-grid; place-items: center; width: var(--ovk-mark); height: var(--ovk-mark); box-sizing: border-box; border-radius: 50%; object-fit: cover; background: hsl(var(--ovk-hue, 215) 45% 38%); color: #fff; font-size: calc(var(--ovk-mark) * .34); font-weight: 800; letter-spacing: .02em; line-height: 1; }
+.ovk-row-trail select { max-width: 9.5em; padding: 5px 6px; border-radius: max(0px, calc(var(--ov-radius-1) - 2px)); border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: .86rem; }
+/* 32% lightness keeps the white letters at 4.5:1 or more for every hue (38% left greens and yellows near 3.7:1). */
+.ovk-mark { --ovk-mark: 40px; flex: none; display: inline-grid; place-items: center; width: var(--ovk-mark); height: var(--ovk-mark); box-sizing: border-box; border-radius: 50%; object-fit: cover; background: hsl(var(--ovk-hue, 215) 45% 32%); color: #fff; font-size: calc(var(--ovk-mark) * .34); font-weight: 800; letter-spacing: .02em; line-height: 1; }
 .ovk-mark--square { border-radius: 28%; }
 .ovk-empty-line { margin: 0 0 14px; padding: 14px; border: 1px dashed var(--ovk-line); border-radius: var(--ovk-radius); color: var(--ovk-muted); }
 
@@ -137,14 +187,14 @@
 .ovk-fold-body { padding: 12px 14px 14px; }
 .ovk-fold-body > :first-child { margin-top: 0; }
 .ovk-fold-body > :last-child { margin-bottom: 0; }
-.ovk-fold--danger > summary { color: var(--ovk-bad); }
+.ovk-fold--danger > summary { color: var(--ovk-bad-text); }
 .ovk-more { position: relative; display: inline-block; }
 .ovk-more > summary { list-style: none; }
-.ovk-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; min-width: 210px; padding: 6px; box-sizing: border-box; border-radius: 12px; border: 1px solid var(--ovk-line); background: var(--ovk-panel); box-shadow: 0 14px 32px rgba(0, 0, 0, .4); }
+.ovk-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; min-width: 210px; padding: 6px; box-sizing: border-box; border-radius: calc(var(--ov-radius-1) + 2px); border: 1px solid var(--ovk-line); background: var(--ovk-panel); box-shadow: var(--ov-elev-3); }
 .ovk-pop form { margin: 0; }
-.ovk-pop-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; box-sizing: border-box; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ovk-text); font: inherit; font-weight: 600; text-align: left; text-decoration: none; cursor: pointer; }
+.ovk-pop-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; box-sizing: border-box; padding: 8px 10px; border: 0; border-radius: max(0px, calc(var(--ov-radius-1) - 2px)); background: transparent; color: var(--ovk-text); font: inherit; font-weight: 600; text-align: left; text-decoration: none; cursor: pointer; }
 .ovk-pop-item:hover, .ovk-pop-item:focus-visible { background: var(--ovk-panel-2); outline: none; }
-.ovk-pop-item--danger { color: var(--ovk-bad); }
+.ovk-pop-item--danger { color: var(--ovk-bad-text); }
 
 /* ── Settings rows: what it does on the left, its control on the right ── */
 .ovk-set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; box-sizing: border-box; padding: 8px 14px; border-top: 1px solid var(--ovk-line); color: var(--ovk-text); cursor: pointer; }
@@ -152,17 +202,17 @@
 div.ovk-set-row { cursor: default; }
 .ovk-set-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
 .ovk-set-text small { color: var(--ovk-muted); font-size: .8rem; }
-.ovk-set-row select { flex: none; max-width: 52%; margin: 0; padding: 7px 8px; border-radius: 10px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: .9rem; }
+.ovk-set-row select { flex: none; max-width: 52%; margin: 0; padding: 7px 8px; border-radius: var(--ov-radius-1); border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: .9rem; }
 .ovk-set-range input[type=range] { flex: 0 1 45%; min-width: 120px; margin: 0; accent-color: var(--ovk-fill); }
 .ovk-set-chips { flex-wrap: wrap; }
 .ovk-switch { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 44px; height: 26px; margin: 0; padding: 0; border-radius: 999px; border: 0; background: var(--ovk-line); cursor: pointer; transition: background .15s; }
-.ovk-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); transition: transform .15s; }
+.ovk-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: var(--ov-elev-1); transition: transform .15s; }
 .ovk-switch:checked { background: var(--ovk-fill); }
 .ovk-switch:checked::after { transform: translateX(18px); }
 .ovk-switch:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: 2px; }
-.ovk-seg { display: inline-flex; flex: none; gap: 2px; padding: 3px; border-radius: 10px; background: var(--ovk-panel-2); }
+.ovk-seg { display: inline-flex; flex: none; flex-wrap: wrap; max-width: 100%; gap: 2px; padding: 3px; border-radius: var(--ov-radius-1); background: var(--ovk-panel-2); }
 .ovk-seg input, .ovk-chip input { position: absolute; opacity: 0; pointer-events: none; }
-.ovk-seg span { display: block; padding: 6px 12px; border-radius: 8px; color: var(--ovk-muted); font-size: .86rem; font-weight: 650; cursor: pointer; }
+.ovk-seg span { display: block; padding: 6px 12px; border-radius: max(0px, calc(var(--ov-radius-1) - 2px)); color: var(--ovk-muted); font-size: .86rem; font-weight: 650; cursor: pointer; }
 .ovk-seg input:checked + span { background: var(--ovk-fill); color: var(--ovk-on-fill); }
 .ovk-seg input:focus-visible + span, .ovk-chip input:focus-visible + span { outline: 2px solid var(--ovk-accent); outline-offset: 1px; }
 .ovk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -173,7 +223,7 @@ div.ovk-set-row { cursor: default; }
 .ovk-form { display: grid; gap: 12px; margin: 0; }
 .ovk-form label { display: grid; gap: 5px; color: var(--ovk-muted); font-size: .9rem; }
 .ovk-form label.ovk-check { display: flex; align-items: flex-start; gap: 10px; color: var(--ovk-text); font-size: .95rem; }
-.ovk-form input:not([type=checkbox]):not([type=radio]):not([type=range]), .ovk-form select, .ovk-form textarea { width: 100%; box-sizing: border-box; min-height: var(--ovk-tap); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: 1rem; }
+.ovk-form input:not([type=checkbox]):not([type=radio]):not([type=range]), .ovk-form select, .ovk-form textarea { width: 100%; box-sizing: border-box; min-height: var(--ovk-tap); padding: 10px 12px; border-radius: var(--ov-radius-1); border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: 1rem; }
 .ovk-form textarea { min-height: 96px; resize: vertical; }
 .ovk-form input:focus-visible, .ovk-form select:focus-visible, .ovk-form textarea:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: 0; border-color: transparent; }
 .ovk-form.ovk-form > p { margin: 0; }
@@ -211,7 +261,7 @@ div.ovk-set-row { cursor: default; }
 /* ── Numbers, empty states, notices, code, sheets ── */
 .ovk-stats { position: relative; display: flex; gap: 8px; margin: 12px -16px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; }
 .ovk-stats::-webkit-scrollbar { display: none; }
-.ovk-stats > div { display: flex; flex-direction: column-reverse; flex: 0 0 auto; min-width: 104px; box-sizing: border-box; padding: 8px 14px; border: 1px solid var(--ovk-line); border-radius: 12px; background: var(--ovk-panel); }
+.ovk-stats > div { display: flex; flex-direction: column-reverse; flex: 0 0 auto; min-width: 104px; box-sizing: border-box; padding: 8px 14px; border: 1px solid var(--ovk-line); border-radius: calc(var(--ov-radius-1) + 2px); background: var(--ovk-panel); }
 .ovk-stats dt { margin: 0; color: var(--ovk-muted); font-size: .76rem; line-height: 1.25; }
 .ovk-stats dt a { color: inherit; text-decoration: none; }
 /* A number that is a link: the whole tile is the target (the label's link stretched over it), never an underline. */
@@ -225,18 +275,18 @@ div.ovk-set-row { cursor: default; }
 .ovk-empty > .ovk-i { width: 28px; height: 28px; }
 .ovk-empty.ovk-empty p { margin: 0; max-width: 46ch; }
 .ovk-empty .ovk-empty-title { color: var(--ovk-text); font-weight: 750; }
-.ovk-notice { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--ovk-line); background: var(--ovk-panel); color: var(--ovk-text); font-size: .92rem; }
+.ovk-notice { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 10px 14px; border-radius: calc(var(--ov-radius-1) + 2px); border: 1px solid var(--ovk-line); background: var(--ovk-panel); color: var(--ovk-text); font-size: .92rem; }
 .ovk-notice > .ovk-i { margin-top: 2px; }
 .ovk-notice--ok { border-color: color-mix(in srgb, var(--ovk-ok) 45%, transparent); }
-.ovk-notice--ok > .ovk-i { color: var(--ovk-ok); }
+.ovk-notice--ok > .ovk-i { color: var(--ovk-ok-text); }
 .ovk-notice--error { border-color: color-mix(in srgb, var(--ovk-bad) 50%, transparent); }
-.ovk-notice--error > .ovk-i { color: var(--ovk-bad); }
-.ovk-notice--warn > .ovk-i { color: var(--ovk-warn); }
+.ovk-notice--error > .ovk-i { color: var(--ovk-bad-text); }
+.ovk-notice--warn > .ovk-i { color: var(--ovk-warn-text); }
 .ovk-notice--info > .ovk-i { color: var(--ovk-accent); }
 .ovk-snip { position: relative; }
 .ovk-snip > .ovk-icon-btn { position: absolute; top: 6px; right: 6px; z-index: 1; width: 34px; height: 34px; background: var(--ovk-panel); border-color: var(--ovk-line); }
-.ovk-snip > pre { max-height: 50vh; margin: 0 0 10px; padding: 12px 48px 12px 12px; overflow: auto; border-radius: 10px; border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font-size: .84rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-.ovk-sheet { width: min(560px, 100vw); max-width: 100vw; max-height: 85dvh; margin: auto; padding: 0; box-sizing: border-box; border: 1px solid var(--ovk-line); border-radius: 18px; background: var(--ovk-panel); color: var(--ovk-text); overflow: hidden; }
+.ovk-snip > pre { max-height: 50vh; margin: 0 0 10px; padding: 12px 48px 12px 12px; overflow: auto; border-radius: var(--ov-radius-1); border: 1px solid var(--ovk-line); background: var(--ovk-input); color: var(--ovk-text); font-size: .84rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ovk-sheet { width: min(560px, 100vw); max-width: 100vw; max-height: 85dvh; margin: auto; padding: 0; box-sizing: border-box; border: 1px solid var(--ovk-line); border-radius: calc(var(--ov-radius-3) - 2px); background: var(--ovk-panel); color: var(--ovk-text); overflow: hidden; }
 .ovk-sheet::backdrop { background: rgba(0, 0, 0, .55); }
 .ovk-sheet[open] { display: flex; flex-direction: column; }
 .ovk-sheet-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--ovk-line); }
@@ -246,7 +296,7 @@ div.ovk-set-row { cursor: default; }
 /* ── Phones (< 600 px): bottom sheets, full-width forms ── */
 
 @media (max-width: 599px) {
-    .ovk-sheet { margin: auto 0 0; width: 100vw; border-radius: 18px 18px 0 0; border-bottom: 0; }
+    .ovk-sheet { margin: auto 0 0; width: 100vw; border-radius: calc(var(--ov-radius-3) - 2px) calc(var(--ov-radius-3) - 2px) 0 0; border-bottom: 0; }
     .ovk-row > a, .ovk-row--static { padding-left: 12px; }
     .ovk-head-tools { gap: 0; }
 }
@@ -273,3 +323,109 @@ div.ovk-set-row { cursor: default; }
     .ovk-go::after { content: ''; position: absolute; inset: -3px; }
     .ovk-find input, .ovk-find select { min-height: 44px; }
 }
+
+/* ── The left sidebar (kit.sidebar, L35): one for every product. A column beside the page from 761 px; on a phone a
+   drawer over everything (kit.sidebarButton opens it; the scrim, its close button and Escape close it, kit-web.js). The
+   main action and search on top, the navigation as vertical rows, then the sections, which scroll on their own. ── */
+.ovk-with-sidebar { display: grid; grid-template-columns: var(--ovk-sidebar-w, 272px) minmax(0, 1fr); min-height: calc(100dvh - var(--navbar-h, 52px)); }
+.ovk-with-sidebar-main { min-width: 0; }
+.ovk-sidebar { position: sticky; top: var(--navbar-h, 52px); height: calc(100dvh - var(--navbar-h, 52px)); box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 10px 10px; border-right: 1px solid var(--ovk-line); background: var(--ovk-panel); color: var(--ovk-text); overflow: hidden; }
+.ovk-sidebar-top { display: flex; align-items: center; gap: 6px; }
+.ovk-sidebar-action { flex: 1; display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 12px; border-radius: calc(var(--ov-radius-1) + 2px); border: 1px solid var(--ovk-line); background: var(--ovk-bg); color: var(--ovk-text); font-weight: 650; text-decoration: none; transition: border-color .18s, background .18s; }
+.ovk-sidebar-action:hover { border-color: color-mix(in srgb, var(--ovk-accent) 55%, var(--ovk-line)); }
+.ovk-sidebar-action .ovk-i { width: 18px; height: 18px; color: var(--ovk-accent); }
+.ovk-sidebar-close, .ovk-sidebar-open { display: none; }
+.ovk-sidebar-find { position: relative; display: flex; align-items: center; margin: 0; }
+.ovk-sidebar-find .ovk-i { position: absolute; left: 11px; width: 16px; height: 16px; color: var(--ovk-muted); pointer-events: none; }
+.ovk-sidebar-find input { width: 100%; min-height: 38px; box-sizing: border-box; padding: 0 12px 0 34px; border-radius: var(--ov-radius-1); border: 1px solid transparent; background: var(--ovk-input); color: var(--ovk-text); font: inherit; font-size: 14px; }
+.ovk-sidebar-find input:focus { outline: none; border-color: var(--ovk-accent); }
+.ovk-sidebar-nav { display: grid; gap: 1px; padding-bottom: 8px; border-bottom: 1px solid var(--ovk-line); }
+.ovk-sidebar-link { display: flex; align-items: center; gap: 11px; min-height: 38px; padding: 0 10px; border-radius: var(--ov-radius-1); color: var(--ovk-muted); font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background .15s, color .15s; }
+.ovk-sidebar-link .ovk-i { width: 19px; height: 19px; flex: none; }
+.ovk-sidebar-link span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovk-sidebar-link:hover { background: var(--ovk-panel-2); color: var(--ovk-text); }
+.ovk-sidebar-link.is-here { background: color-mix(in srgb, var(--ovk-accent) 14%, transparent); color: var(--ovk-text); }
+.ovk-sidebar-link.is-here .ovk-i { color: var(--ovk-accent); }
+.ovk-sidebar-link:focus-visible, .ovk-sidebar-item:focus-visible, .ovk-sidebar-action:focus-visible { outline: 2px solid var(--ovk-accent); outline-offset: -2px; }
+.ovk-sidebar-count { min-width: 20px; box-sizing: border-box; padding: 1px 6px; border-radius: 999px; background: var(--ovk-fill); color: var(--ovk-on-fill); font-size: 11.5px; font-weight: 700; text-align: center; }
+.ovk-sidebar-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ovk-accent); }
+.ovk-sidebar-dot.is-busy { animation: ovk-sidebar-breathe 1.6s ease-in-out infinite; }
+.ovk-sidebar-dot.is-needs { background: var(--ovk-warn); }
+.ovk-sidebar-dot.is-bad { background: var(--ovk-bad); }
+@keyframes ovk-sidebar-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.75); } }
+.ovk-sidebar-secs { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 -4px; padding: 0 4px 8px; }
+.ovk-sidebar-h { margin: 12px 10px 4px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ovk-muted); }
+.ovk-sidebar-item { display: flex; align-items: center; gap: 9px; min-height: 36px; padding: 4px 10px; border-radius: var(--ov-radius-1); color: var(--ovk-text); font-size: 14px; text-decoration: none; }
+.ovk-sidebar-item:hover { background: var(--ovk-panel-2); }
+.ovk-sidebar-item.is-here { background: var(--ovk-panel-2); font-weight: 600; }
+.ovk-sidebar-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovk-sidebar-m { flex: none; color: var(--ovk-muted); font-size: 12px; }
+/* A row with a quiet second line (4.102.0): a conversation's last message under its name, the mark beside both lines. */
+.ovk-sidebar-item.has-sub { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: 9px; row-gap: 1px; padding-block: 6px; }
+.ovk-sidebar-item.has-sub.has-mark { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.ovk-sidebar-item.has-sub.has-mark > :first-child { grid-row: 1 / span 2; }
+.ovk-sidebar-s { grid-column: 1 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ovk-muted); font-size: 12.5px; font-weight: 400; }
+.ovk-sidebar-item.has-sub.has-mark .ovk-sidebar-s { grid-column: 2 / -1; }
+.ovk-sidebar-empty { margin: 8px 10px; color: var(--ovk-muted); font-size: 13.5px; }
+.ovk-sidebar-foot { padding-top: 8px; border-top: 1px solid var(--ovk-line); }
+@media (max-width: 760px) {
+    .ovk-with-sidebar { grid-template-columns: minmax(0, 1fr); }
+    .ovk-sidebar { position: fixed; z-index: 10060; top: 0; left: 0; bottom: 0; height: auto; width: min(320px, 86vw); padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); border-right: 0; translate: -100% 0; visibility: hidden; transition: translate .25s ease, visibility 0s linear .25s; box-shadow: 12px 0 32px rgba(0, 0, 0, .25); }
+    .ovk-sidebar.is-open { translate: 0 0; visibility: visible; transition: translate .25s ease; }
+    .ovk-sidebar-close, .ovk-sidebar-open { display: inline-grid; }
+    .ovk-sidebar-scrim { position: fixed; inset: 0; z-index: 10050; background: rgba(0, 0, 0, .4); }
+}
+@media (prefers-reduced-motion: reduce) { .ovk-sidebar, .ovk-sidebar.is-open { transition: none; } .ovk-sidebar-dot.is-busy { animation: none; } }
+
+/* ── Scroll areas (4.69.0; the owner, 2026-11-01: "you can't scroll down the page even when you're at the bottom of
+   the chat… this should be consistent across websites"). The network's rule: a scroll area inside a page that scrolls
+   hands the swipe on to the page at its ends; only an area that fills the screen (a sheet, a modal, a full-screen
+   chat) holds it. A sideways rail scrolls sideways only, so a vertical swipe on it moves the page. */
+.ov-scroll { overflow: auto; overscroll-behavior: auto; -webkit-overflow-scrolling: touch; }
+.ov-scroll-fill { overflow: auto; overscroll-behavior: contain; }
+.ov-scroll-x { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y; scrollbar-width: none; }
+.ov-scroll-x::-webkit-scrollbar { display: none; }
+@media (max-width: 900px), (hover: none) {
+    .ovk-sidebar-secs { overscroll-behavior-y: auto; }
+}
+
+/* ── Placeholders shaped like the content (4.70.0, kit.skeleton; plan L52) ── A soft light passes over grey shapes the size of
+   what is coming; nothing spins; still under reduced motion and Calm. A list paints these in its first HTML and fills them in
+   place. */
+.ovk-skel { display: block; border-radius: max(0px, calc(var(--ov-radius-1) - 2px)); background: color-mix(in srgb, var(--text-primary, #e8edf3) 7%, transparent); background-image: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--text-primary, #e8edf3) 9%, transparent) 50%, transparent 70%); background-size: 220% 100%; background-repeat: no-repeat; animation: ovkShimmer 1.6s ease-in-out infinite; }
+@keyframes ovkShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.ovk-skels { display: grid; gap: 12px; }
+.ovk-skels-card { grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); }
+.ovk-skels-tile { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+.ovk-skels-chip { display: flex; flex-wrap: wrap; gap: 8px; }
+.ovk-skel-card { display: grid; gap: 8px; }
+.ovk-skel-thumb { aspect-ratio: 16 / 9; border-radius: calc(var(--ov-radius-1) + 2px); }
+.ovk-skel-l1 { height: 13px; width: 86%; }
+.ovk-skel-l2 { height: 11px; width: 58%; }
+.ovk-skel-row { display: flex; align-items: center; gap: 12px; }
+.ovk-skel-avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; }
+.ovk-skel-lines { flex: 1; display: grid; gap: 7px; min-width: 0; }
+.ovk-skel-tile { aspect-ratio: 1; border-radius: var(--ov-radius-2); }
+.ovk-skel-chip { width: 84px; height: 30px; border-radius: 999px; }
+.ovk-skel-line { height: 12px; }
+.ovk-skel-chat { display: flex; align-items: center; gap: 8px; }
+.ovk-skel-dot { flex: none; width: 22px; height: 22px; border-radius: 50%; }
+.ovk-skel-stat { display: grid; gap: 6px; padding: 12px; border-radius: var(--ov-radius-2); border: 1px solid var(--border, rgba(255,255,255,.08)); }
+.ovk-skel-num { height: 22px; width: 48%; }
+@media (prefers-reduced-motion: reduce) { .ovk-skel { animation: none; } }
+html[data-ov-motion=reduced] .ovk-skel { animation: none; }
+
+/* ── Moving between pages (4.70.0, plan L52) ── A server-rendered site's pages cross-fade while the navbar and the app bar
+   stay put (cross-document view transitions; a browser without them just loads the page). Off under reduced motion. */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
+#navbar-mount, .openvibe-navbar { view-transition-name: ov-navbar; }
+.ovnav-appbar { view-transition-name: ov-appbar; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* Content labels (L1): quiet chips beside a title, the adult one in the warning colour. They say what a thing carries;
+   each viewer's own choice (ov-labels.js) decides whether it shows, blurs or hides. */
+.ovk-labels { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; padding: 0; list-style: none; }
+.ovk-label { display: inline-flex; align-items: center; min-height: 20px; padding: 0 8px; border-radius: 999px; font-size: .7rem; font-weight: 700; letter-spacing: .02em;
+    color: var(--text-secondary, #a8b3c7); background: color-mix(in srgb, var(--text-primary, #e6edf7) 7%, transparent); border: 1px solid var(--border, rgba(255,255,255,.1)); }
+.ovk-label--adult { color: var(--warning-text, #fbbf24); border-color: color-mix(in srgb, var(--warning-text, #fbbf24) 45%, transparent); background: color-mix(in srgb, var(--warning-text, #fbbf24) 9%, transparent); }

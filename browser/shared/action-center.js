@@ -96,8 +96,8 @@
             .ovac-acts button { width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted, #8b8b96); cursor: pointer; display: grid; place-items: center; }
             .ovac-acts button:hover { background: var(--bg-hover, rgba(255,255,255,.06)); color: var(--text-primary, #ececf1); }
             .ovac-acts button svg { width: 18px; height: 18px; }
-            .ovac-acts button.spin svg { animation: ovac-spin .8s linear infinite; }
-            @keyframes ovac-spin { to { transform: rotate(360deg); } }
+            .ovac-acts button.spin svg { animation: ovac-pulse 1s ease-in-out infinite; }
+            @keyframes ovac-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
             .ovac-acts [data-act="close"] { display: none; }
             .ovac-tabs { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 6px; border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); }
             .ovac-tabs::-webkit-scrollbar { display: none; }
@@ -137,7 +137,10 @@
             .ovac-empty svg { width: 46px; height: 46px; display: block; margin: 0 auto 12px; color: var(--accent, #3b82f6); opacity: .75; stroke-width: 1.4; }
             .ovac-empty b { display: block; margin-bottom: 4px; font-size: 15px; color: var(--text-primary, #ececf1); }
             .ovac-wait { display: flex; justify-content: center; padding: 28px; }
-            .ovac-wait span { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border, rgba(255,255,255,.12)); border-top-color: var(--accent, #3b82f6); animation: ovac-spin .8s linear infinite; }
+            .ovac-wait span { position: relative; display: inline-block; width: 6px; height: 6px; margin: 0 10px; border: 0; border-radius: 50%; background: var(--accent, #3b82f6); animation: ovac-hop 1s ease-in-out .15s infinite; }
+            .ovac-wait span::before, .ovac-wait span::after { content: ''; position: absolute; top: 0; width: 6px; height: 6px; border-radius: 50%; background: inherit; animation: ovac-hop 1s ease-in-out infinite; }
+            .ovac-wait span::before { left: -10px; } .ovac-wait span::after { left: 10px; animation-delay: .3s; }
+            @keyframes ovac-hop { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-4px); opacity: 1; } }
             .ovac-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border, rgba(255,255,255,.08)); font-size: 12px; color: var(--text-muted, #8b8b96); }
             .ovac-foot a { color: var(--accent-light, var(--accent, #60a5fa)); font-weight: 700; text-decoration: none; }
             @media (max-width: 640px) {
