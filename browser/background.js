@@ -63,7 +63,12 @@ const vault = self.OVLockerVault.create({
     account: async () => { const a = await auth.account(); return a?.sub || (await auth.status()).mode; },
     scheduleLock: (when) => ext.alarms.create('locker-lock', { when }), cancelLock: () => ext.alarms.clear('locker-lock'),
 });
-ext.alarms.onAlarm.addListener((alarm) => { if (alarm.name === 'locker-lock') vault.state().catch(() => vault.lock()); });
+ext.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'locker-lock') vault.state().catch(() => vault.lock());
+    if (alarm.name === 'locker-clipboard-clear') platform.clipboard.clear().catch(() => {});
+});
+// Restore the deadline if a browser dropped an alarm while suspending the worker.
+vault.state().then((saved) => { if (saved) return ext.alarms.create('locker-lock', { when: saved.expires }); }).catch(() => vault.lock());
 ext.runtime.onStartup.addListener(() => { vault.lock(); });
 ext.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && (changes[config.DOCK_ACCOUNT_KEY] || changes[config.NETWORK_TOKEN_KEY])) vault.lock();

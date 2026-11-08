@@ -139,3 +139,18 @@ test('Locker HTTP client only sends the token and sealed bytes; failure bodies a
     const bad = create({ origin: 'https://openvibe.locker', getToken: async () => 'fixture-token', fetch: async () => new Response('sensitive remote error', { status: 500 }) });
     await assert.rejects(bad.keys(), (e) => !e.message.includes('sensitive') && /Locker/.test(e.message));
 });
+
+
+test('Firefox clipboard alarm survives event-page unloading without persisting plaintext', async () => {
+    const { createPlatform } = require('../browser/lib/platform'); const writes = [], alarms = [];
+    const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { clipboard: { writeText: async (v) => writes.push(v) } } });
+    globalThis.self = { OVLockerClipboard: { create: ({ write }) => ({ write, clear: () => write('') }) } };
+    try {
+        const ext = { alarms: { create: async (name, info) => alarms.push({ name, ...info }) } };
+        const before = Date.now(); await createPlatform(ext, {}).clipboard.write('fixture');
+        assert.equal(alarms[0].name, 'locker-clipboard-clear'); assert.ok(alarms[0].when >= before + 30000);
+        // A fresh platform has no timer/value in memory. The alarm can still clear it.
+        await createPlatform(ext, {}).clipboard.clear(); assert.deepEqual(writes, ['fixture', '']);
+    } finally { delete globalThis.self; Object.defineProperty(globalThis, 'navigator', originalNavigator); }
+});

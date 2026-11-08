@@ -282,8 +282,8 @@ Deployment requires Network's `locker.login.manage` scope and
 OAuth grants need **Sign in to Companion** again to grant the new scope. The scope
 allows only own wrapped-key reads and own encrypted-login reads/creates, with live
 Network revocation checks. It grants no key-write, general-file or agent blind-fill
-capability. Chrome uses an offscreen clipboard document; Firefox uses its persistent
-background document. Only the Locker host permission is added.
+capability. Chrome uses an offscreen clipboard document; Firefox uses its
+background event page with an alarm to clear even after suspension. Only the Locker host permission is added.
 
 Bundled crypto: `browser/shared/ov-locker-core.js` is the unchanged SDK 0.101.0
 browser bundle from Shared 4.156.0. `locker-payload.js` and `locker-passwords.js`
@@ -294,3 +294,6 @@ Optional browser verification: install Playwright outside the package (or set
 `PLAYWRIGHT_MODULE` to an existing installation), install its Chromium build, and run
 `node test/locker-browser.js`. It checks trusted popup clicks, 12 responsive/theme
 screenshots and actual clipboard clearing with the packaged worker and no popup open.
+
+Firefox MV3 background pages are [non-persistent](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Background_scripts), so a clipboard alarm backs up its in-memory timer.
+Chrome uses the documented [offscreen clipboard context](https://developer.chrome.com/docs/extensions/reference/api/offscreen).

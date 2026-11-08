@@ -53,11 +53,17 @@
                 },
             },
             clipboard: {
+                async clear() {
+                    if (this.local) return this.local.clear();
+                    if (!ext.offscreen) return navigator.clipboard.writeText('');
+                },
                 async write(value) {
                     if (!ext.offscreen) {
-                        // Firefox keeps its background document alive, including the clear timer.
+                        // Firefox may unload its event page: the alarm wakes it to clear the clipboard.
                         this.local ||= self.OVLockerClipboard.create({ write: (text) => navigator.clipboard.writeText(text) });
-                        return this.local.write(value);
+                        await this.local.write(value);
+                        await ext.alarms.create('locker-clipboard-clear', { when: Date.now() + 30000 });
+                        return;
                     }
                     if (!await ext.offscreen.hasDocument()) await ext.offscreen.createDocument({
                         url: 'clipboard.html', reasons: ['CLIPBOARD'], justification: 'Copy a saved password or TOTP code and clear it after 30 seconds.',
