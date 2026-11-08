@@ -11,7 +11,7 @@ const { check, done } = require('./helpers/harness');
 
 const DIR = path.join(__dirname, '..', 'browser');
 const ORIGIN = 'https://openvibe.coupons';
-const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes'];
+const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.locker'];
 
 (async () => {
     const { manifest, origin, problems } = auditDir(DIR);
@@ -19,8 +19,8 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
     await check('the shipped manifest passes the audit: activeTab + identity + scripting + storage + sidePanel, four OpenVibe host permissions, MV3', async () => {
         assert.deepStrictEqual(problems, []);
         assert.strictEqual(origin, ORIGIN);
-        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'identity', 'scripting', 'storage']);
-        assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*']);
+        assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'alarms', 'clipboardWrite', 'identity', 'offscreen', 'scripting', 'storage']);
+        assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*', 'https://openvibe.locker/*']);
         assert.strictEqual(manifest.sidebar_action.default_panel, 'panel.html', 'the Dock lives in the side panel');
         for (const k of ['content_scripts', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
             assert.ok(!(k in manifest), `${k} must not be present`);
@@ -95,7 +95,7 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
         const csp = manifest.content_security_policy.extension_pages;
         // OpenVibe.Mail is in the CSP's connect-src (the Companion reaches the masks with CORS,
         // the way the Coupons API lets a first-party extension in) but it is not a host permission.
-        assert.match(csp, /connect-src https:\/\/openvibe\.coupons https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes https:\/\/openvibe\.email;/);
+        assert.match(csp, /connect-src https:\/\/openvibe\.coupons https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes https:\/\/openvibe\.email https:\/\/openvibe\.locker;/);
         assert.match(csp, /style-src 'self' 'unsafe-inline';/);
         assert.match(csp, /img-src 'self' blob:;/);
         assert.match(csp, /frame-src https:\/\/openvibe\.live;/);
@@ -124,7 +124,7 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
             const src = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"])\/\/.*$/gm, '$1');
             for (const re of forbidden) assert.doesNotMatch(src, re, `${path.relative(DIR, f)} uses ${re}`);
             const rel0 = path.relative(DIR, f);
-            if (![path.join('background.js'), path.join('lib', 'mask-fill.js'), path.join('popup.js')].includes(rel0)) {
+            if (![path.join('background.js'), path.join('lib', 'mask-fill.js'), path.join('popup.js'), path.join('lib', 'platform.js')].includes(rel0)) {
                 assert.doesNotMatch(src, /sendMessage/, `${rel0} messages the extension`);
             }
             const rel = path.relative(DIR, f);
@@ -139,7 +139,7 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
         assert.deepStrictEqual(injects, [path.join('lib', 'platform.js')], 'only the platform wrapper runs a script in a page');
         const plat = fs.readFileSync(path.join(DIR, 'lib', 'platform.js'), 'utf8');
         assert.deepStrictEqual([...plat.matchAll(/files:\s*\[([^\]]*)\]/g)].map((m) => m[1].trim()), ["'lib/autoapply.js'", "'lib/rating.js'", "'lib/mask.js', 'lib/mask-fill.js'", "'lib/listing.js'"], 'the files it injects');
-        assert.doesNotMatch(plat, /allFrames|world:\s*['"]MAIN|tabId:(?!\s*tabId\b)/, 'the active tab only, its top frame, the isolated world');
+        assert.doesNotMatch(plat, /allFrames:\s*true|world:\s*['"]MAIN|tabId:(?!\s*tabId\b)/, 'the active tab only, its top frame, the isolated world');
         // What runs in the page makes no request and reads no stored data.
         for (const file of ['autoapply.js', 'rating.js', 'listing.js']) {
             const src = fs.readFileSync(path.join(DIR, 'lib', file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');

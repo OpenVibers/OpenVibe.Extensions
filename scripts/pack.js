@@ -85,7 +85,7 @@ function forTarget(files, target) {
         delete m.minimum_chrome_version;
         delete m.side_panel;
         delete m.key;   // Chrome's public key is not a Firefox manifest field
-        m.permissions = (m.permissions || []).filter((p) => p !== 'sidePanel');
+        m.permissions = (m.permissions || []).filter((p) => p !== 'sidePanel' && p !== 'offscreen');
         // Firefox has no background service worker: it runs the same file as a background page.
         m.background = { scripts: ['background.js'], type: 'module' };
     } else throw new Error('target must be chrome or firefox');

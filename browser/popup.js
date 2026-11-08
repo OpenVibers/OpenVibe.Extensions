@@ -29,6 +29,8 @@
         });
     }
 
+    self.OVLockerPanel.mount({ container: document.getElementById('locker'), ask: askWorker, platform });
+
     function el(tag, attrs) {
         const node = document.createElement(tag);
         const props = attrs || {};

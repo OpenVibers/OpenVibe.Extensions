@@ -34,6 +34,7 @@
         CHAT_ORIGIN: 'https://openvibe.chat',
         // MAIL_ORIGIN is OpenVibe.Mail's API, where the person's masks live (GET/POST /api/v1/masks). The
         // Companion asks it for one mask per site, and never for anything else.
+        LOCKER_ORIGIN: 'https://openvibe.locker',
         MAIL_ORIGIN: 'https://openvibe.email',
         // CODES_ORIGIN is OpenVibe.Codes' API: the Dock's agent view (GET /api/v1/me/agent-view and the
         // four controls), and the still Codes serves when nothing is live.
@@ -43,7 +44,7 @@
         // identity.getRedirectURL() is not one of these refuses to sign in rather than send an
         // unregistered redirect.
         OAUTH_CLIENT_ID: 'companion',
-        OAUTH_SCOPES: Object.freeze(['dock', 'activity', 'chat.read', 'agent.view', 'mail.mask.manage']),
+        OAUTH_SCOPES: Object.freeze(['dock', 'activity', 'chat.read', 'agent.view', 'mail.mask.manage', 'locker.login.manage']),
         OAUTH_REDIRECT_URIS: Object.freeze([
             'https://bjcjcfcecpkkmfndegkjekoipdmbgakd.chromiumapp.org/',
             'https://bb6593a68b1dcfbb7acd9650f04a169f4c5b57a0.extensions.allizom.org/',

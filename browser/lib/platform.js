@@ -52,7 +52,28 @@
                     await call(ext.tabs.create, ext.tabs, [{ url: url }]);
                 },
             },
+            clipboard: {
+                async write(value) {
+                    if (!ext.offscreen) {
+                        // Firefox keeps its background document alive, including the clear timer.
+                        this.local ||= self.OVLockerClipboard.create({ write: (text) => navigator.clipboard.writeText(text) });
+                        return this.local.write(value);
+                    }
+                    if (!await ext.offscreen.hasDocument()) await ext.offscreen.createDocument({
+                        url: 'clipboard.html', reasons: ['CLIPBOARD'], justification: 'Copy a saved password or TOTP code and clear it after 30 seconds.',
+                    });
+                    const result = await ext.runtime.sendMessage({ target: 'locker-clipboard', value });
+                    if (!result?.ok) throw new Error('Clipboard unavailable.');
+                },
+            },
             scripting: {
+                async fillLogin(tabId, login, submit) {
+                    const out = await call(ext.scripting.executeScript, ext.scripting, [{
+                        target: { tabId, allFrames: false }, world: 'ISOLATED',
+                        func: self.OVLockerFill.fill, args: [login, submit === true, true],
+                    }]);
+                    return out?.[0]?.result || { ok: false };
+                },
                 async tryCodes(tabId, codes) {
                     if (!ext.scripting || !Number.isInteger(tabId)) throw new TypeError('this browser cannot run the code tester');
                     const list = (Array.isArray(codes) ? codes : []).slice(0, config.MAX_TRIES).map(function (c) { return { id: String(c.id || ''), code: String(c.code || '') }; });

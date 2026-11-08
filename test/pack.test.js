@@ -47,7 +47,7 @@ function unzip(buf) {
         assert.ok(files.has('manifest.json') && files.has('popup.html') && files.has('lib/api.js') && files.has('icons/icon-128.png'));
         // OpenVibe.Mail is in the CSP's connect-src (the Companion reaches the masks with CORS) but it is
         // not one of the four host permissions.
-        assert.deepStrictEqual(auditManifest(JSON.parse(files.get('manifest.json')), { apiOrigin: 'https://openvibe.coupons', origins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes'], connectOrigins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.email'] }), []);
+        assert.deepStrictEqual(auditManifest(JSON.parse(files.get('manifest.json')), { apiOrigin: 'https://openvibe.coupons', origins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.locker'], connectOrigins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.email', 'https://openvibe.locker'] }), []);
     });
 
     await check('the build is reproducible', async () => {
@@ -61,8 +61,8 @@ function unzip(buf) {
         assert.match(r.out, /-dev\.zip$/);
         const files = unzip(fs.readFileSync(r.out));
         const m = JSON.parse(files.get('manifest.json'));
-        assert.deepStrictEqual(m.host_permissions, ['http://localhost:4850/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*']);
-        assert.match(m.content_security_policy.extension_pages, /connect-src http:\/\/localhost:4850 https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes https:\/\/openvibe\.email;/);
+        assert.deepStrictEqual(m.host_permissions, ['http://localhost:4850/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*', 'https://openvibe.locker/*']);
+        assert.match(m.content_security_policy.extension_pages, /connect-src http:\/\/localhost:4850 https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes https:\/\/openvibe\.email https:\/\/openvibe\.locker;/);
         assert.match(m.name, /development/);
         assert.match(files.get('lib/config.js').toString(), /API_ORIGIN: 'http:\/\/localhost:4850'/);
         assert.doesNotMatch(files.get('manifest.json').toString() + files.get('lib/config.js').toString(), /openvibe\.coupons\//);
@@ -85,7 +85,7 @@ function unzip(buf) {
             } else {
                 delete want.side_panel;
                 delete want.key;
-                want.permissions = want.permissions.filter((p) => p !== 'sidePanel');
+                want.permissions = want.permissions.filter((p) => p !== 'sidePanel' && p !== 'offscreen');
                 // Firefox has no background service worker: it runs the same file as a background page.
                 want.background = { scripts: ['background.js'], type: 'module' };
             }

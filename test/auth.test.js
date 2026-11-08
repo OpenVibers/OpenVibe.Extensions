@@ -65,7 +65,7 @@ function fetcher(responses) {
                 assert.strictEqual(u.searchParams.get('client_id'), 'companion');
                 assert.strictEqual(u.searchParams.get('redirect_uri'), CHROME);
                 assert.strictEqual(u.searchParams.get('response_type'), 'code');
-                assert.strictEqual(u.searchParams.get('scope'), 'dock activity chat.read agent.view mail.mask.manage');
+                assert.strictEqual(u.searchParams.get('scope'), 'dock activity chat.read agent.view mail.mask.manage locker.login.manage');
                 assert.strictEqual(u.searchParams.get('code_challenge_method'), 'S256');
                 assert.match(state, /^[A-Za-z0-9_-]{43}$/);
                 issuedChallenge = u.searchParams.get('code_challenge');
