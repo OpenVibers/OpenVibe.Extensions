@@ -7,6 +7,10 @@
     function fill(login, submit, clicked) {
         if (clicked !== true || window !== window.top || location.origin !== login.site) return { ok: false };
         function visible(input) {
+            for (let ancestor = input; ancestor; ancestor = ancestor.parentElement) {
+                const style = getComputedStyle(ancestor);
+                if (style.display === 'none' || style.visibility !== 'visible' || Number(style.opacity) === 0) return false;
+            }
             const style = getComputedStyle(input);
             return !input.disabled && !input.readOnly && input.type !== 'hidden' && style.display !== 'none' && style.visibility === 'visible'
                 && Number(style.opacity) !== 0 && Array.from(input.getClientRects()).some((rect) => rect.width > 0 && rect.height > 0) && !input.closest('[inert]');
@@ -15,9 +19,11 @@
         if (passwords.length !== 1) return { ok: false }; // Ambiguous signup / change-password forms need the person.
         const password = passwords[0];
         const fields = Array.from((password.form || document).querySelectorAll('input')).filter(visible);
+        const textFields = fields.filter((el) => el.type === 'text');
         const username = fields.find((el) => el.autocomplete === 'username')
             || fields.find((el) => el.type === 'email')
-            || fields.find((el) => el.type === 'text' && /user|login|email/i.test(el.name + ' ' + el.id));
+            || fields.find((el) => el.type === 'text' && /user|login|email/i.test(el.name + ' ' + el.id))
+            || (password.form && textFields.length === 1 ? textFields[0] : null);
         if (!username || (submit && !password.form)) return { ok: false };
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
         for (const [input, value] of [[username, login.username], [password, login.password]]) {

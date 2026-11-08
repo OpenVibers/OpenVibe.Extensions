@@ -87,20 +87,20 @@ test('locking during a pending decrypt cancels the fill', async () => {
     await assert.rejects(pending, /locked/); assert.equal(f.fills.length, 0);
 });
 
-function page({ site = 'https://example.test', frame = false, clicked = true, submit = false, hidden = false, navigate = false } = {}) {
+function page({ site = 'https://example.test', frame = false, clicked = true, submit = false, hidden = false, transparentParent = false, navigate = false } = {}) {
     const calls = []; const form = { querySelectorAll: () => [username, password] };
     class Input { set value(v) { calls.push(v); } }
     class Form { requestSubmit() { calls.push('submit'); } }
-    const input = (type, name) => Object.assign(new Input(), { type, name, id: name, autocomplete: name, form, isConnected: true, getClientRects: () => hidden ? [] : [{ width: 160, height: 40 }], closest: () => null, dispatchEvent: () => { if (navigate) ctx.location.origin = 'https://evil.test'; } });
+    const input = (type, name) => Object.assign(new Input(), { type, name, id: name, autocomplete: name, form, parentElement: transparentParent ? { transparent: true } : null, isConnected: true, getClientRects: () => hidden ? [] : [{ width: 160, height: 40 }], closest: () => null, dispatchEvent: () => { if (navigate) ctx.location.origin = 'https://evil.test'; } });
     const username = input('text', 'username'), password = input('password', 'password');
     const win = {}; win.top = frame ? {} : win;
-    const ctx = { window: win, location: { origin: site }, document: { querySelectorAll: () => [password] }, HTMLInputElement: Input, HTMLFormElement: Form, Event: class {}, getComputedStyle: () => ({ display: 'block', visibility: 'visible', opacity: '1' }) };
+    const ctx = { window: win, location: { origin: site }, document: { querySelectorAll: () => [password] }, HTMLInputElement: Input, HTMLFormElement: Form, Event: class {}, getComputedStyle: (el) => ({ display: 'block', visibility: 'visible', opacity: el.transparent ? '0' : '1' }) };
     const result = vm.runInNewContext('(' + fill.toString() + ')(login, submit, clicked)', { ...ctx, login: { site: 'https://example.test', username: 'alice', password: 'fixture password' }, submit, clicked });
     return { result, calls };
 }
 test('injected function rechecks origin and top frame before typing and submits only on explicit request', () => {
     assert.deepEqual(page().calls, ['alice', 'fixture password']); assert.deepEqual(page({ submit: true }).calls, ['alice', 'fixture password', 'submit']);
-    for (const opts of [{ site: 'https://sub.example.test' }, { site: 'http://example.test' }, { frame: true }, { clicked: false }, { hidden: true }]) assert.deepEqual(page(opts).calls, []);
+    for (const opts of [{ site: 'https://sub.example.test' }, { site: 'http://example.test' }, { frame: true }, { clicked: false }, { hidden: true }, { transparentParent: true }]) assert.deepEqual(page(opts).calls, []);
     assert.deepEqual(page({ navigate: true }).calls, ['alice'], 'navigation from a username handler prevents password typing');
 });
 
