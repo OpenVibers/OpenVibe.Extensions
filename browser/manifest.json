@@ -4,7 +4,7 @@
   "short_name": "OpenVibe",
   "version": "0.9.1",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqVJohdlaysL2HgSsj2Fsd8PxPvXJkZHjEvNyGSYNSEpZBoIeZd7Cm7xznGVikDBbe7WseaNLt+HheX4WhN94jU/FrS2016AqQG9NTHoymJR8XSrPPDyhc85EUpICOFwqfFsSOykzaRyHZVcrvoepYwntwFjWdt1ul4VozwkqKovZoKUgCn398aNvZ6AH/J0xb0xWMiOiL9CvUWN/jK4wv0ShnJevpmyBBHL273CkQvfMS3VUBvBjq3seMU8BAHkE5RI3c2y/MRdjwYGsCoMU6MPYwt46PQZ0S8SPnFFozJndkpoqc/ue9oXhd77b12GKlJ1BPhHgn8BSx4IAvjeL1wIDAQAB",
-  "description": "Coupon codes for the shop you are on, tried in its coupon box when you ask; the same restaurant on every delivery app; a review site's rating saved to OpenVibe.Reviews; and one click to keep a rental listing on your OpenVibe.Rent board or watch a page. The OpenVibe Dock sits in the side panel, on every site. Reads the tab only when you open it.",
+  "description": "Coupon codes for the shop you are on, tried in its coupon box when you ask; the same restaurant on every delivery app; a review site's rating saved to OpenVibe.Reviews; a mask in the email box of a sign-up form; and one click to keep a rental listing on your OpenVibe.Rent board or watch a page. The OpenVibe Dock sits in the side panel, on every site. Reads the tab only when you open it.",
   "homepage_url": "https://github.com/OpenVibers/OpenVibe.Extensions",
   "author": "OpenVibers",
   "icons": {
@@ -29,6 +29,10 @@
     "default_panel": "panel.html",
     "open_in_sidebar": true
   },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "permissions": [
     "activeTab",
     "identity",
@@ -42,7 +46,7 @@
     "https://openvibe.chat/*"
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src https://openvibe.coupons https://openvibe.network https://openvibe.chat https://openvibe.codes; frame-src https://openvibe.live; object-src 'none'; base-uri 'none'"
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src https://openvibe.coupons https://openvibe.network https://openvibe.chat https://openvibe.codes https://openvibe.email; frame-src https://openvibe.live; object-src 'none'; base-uri 'none'"
   },
   "minimum_chrome_version": "114",
   "browser_specific_settings": {

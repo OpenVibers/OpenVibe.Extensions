@@ -32,6 +32,9 @@
         // origins the side panel may reach besides the API origin.
         NETWORK_ORIGIN: 'https://openvibe.network',
         CHAT_ORIGIN: 'https://openvibe.chat',
+        // MAIL_ORIGIN is OpenVibe.Mail's API, where the person's masks live (GET/POST /api/v1/masks). The
+        // Companion asks it for one mask per site, and never for anything else.
+        MAIL_ORIGIN: 'https://openvibe.email',
         // CODES_ORIGIN is OpenVibe.Codes' API: the Dock's agent view (GET /api/v1/me/agent-view and the
         // four controls), and the still Codes serves when nothing is live.
         CODES_ORIGIN: 'https://openvibe.codes',
@@ -40,7 +43,7 @@
         // identity.getRedirectURL() is not one of these refuses to sign in rather than send an
         // unregistered redirect.
         OAUTH_CLIENT_ID: 'companion',
-        OAUTH_SCOPES: Object.freeze(['dock', 'activity', 'chat.read', 'agent.view']),
+        OAUTH_SCOPES: Object.freeze(['dock', 'activity', 'chat.read', 'agent.view', 'mail.mask.manage']),
         OAUTH_REDIRECT_URIS: Object.freeze([
             'https://bjcjcfcecpkkmfndegkjekoipdmbgakd.chromiumapp.org/',
             'https://bb6593a68b1dcfbb7acd9650f04a169f4c5b57a0.extensions.allizom.org/',
@@ -51,6 +54,12 @@
         DOCK_ACCOUNT_KEY: 'dockAccount',
         // Kept for the 0.7.0 pasted-token path until a later release removes it (see README).
         NETWORK_TOKEN_KEY: 'networkToken',
+        // MAIL_SCOPE is the scope OpenVibe.Mail asks the Network for before it lets the Companion manage
+        // the person's masks. Without it the Companion offers nothing and creates nothing.
+        MAIL_SCOPE: 'mail.mask.manage',
+        // MASK_MUTE_KEY is where the sites the person asked not to be offered a mask on are kept, on this
+        // device only.
+        MASK_MUTE_KEY: 'maskMutes',
         MAX_TRIES: 10,
         CONNECT_PATH: '/connect-extension',
         TOKEN_KEY: 'installToken',

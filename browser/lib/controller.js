@@ -89,6 +89,11 @@
                 }
             },
 
+            /** The tab this popup is about: its id (the mask button is put in it) and its address. */
+            tabInfo() {
+                return { id: tab.id, url: tab.url, title: tab.title };
+            },
+
             /** Which hand-offs make sense for this page: any web page can go to the board or a watch; a rental site leads with the board; a delivery app offers the comparison. */
             page() {
                 const ok = Boolean(handoff && host.hostnameOf(tab.url) && handoff.boardUrl(tab.url, tab.title));

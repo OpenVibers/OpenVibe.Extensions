@@ -13,6 +13,21 @@
     const fmt = self.OVFormat;
     const content = document.getElementById('content');
     const site = document.getElementById('site');
+    const masksSection = document.getElementById('masks');
+    const masksBody = document.getElementById('masks-body');
+    const rules = self.OVMask;
+    const panel = self.OVMaskPanel;
+
+    /** Ask the background worker (the only holder of the person's sign-in). */
+    function askWorker(message) {
+        return new Promise(function (resolve) {
+            try {
+                ext.runtime.sendMessage(message, function (answer) { resolve(answer || null); });
+            } catch (e) {
+                resolve(null);
+            }
+        });
+    }
 
     function el(tag, attrs) {
         const node = document.createElement(tag);
@@ -159,10 +174,54 @@
         return el('section', { className: 'try', 'aria-label': 'Try the codes on this page' }, run, note, status, list, send);
     }
 
+    /**
+     * The masks for this site: the addresses the person already has for it, with Copy and Turn off, and
+     * the per-site switch that stops the Companion offering a mask here.
+     *
+     * Opening the popup also puts the "Use a mask for <site>" button in the tab's email fields: the
+     * page is touched only after the person opened the Companion on it (activeTab), and only in the
+     * fields of a form worth offering a mask on.
+     */
+    async function renderMasks() {
+        const info = controller.tabInfo();
+        const label = rules.siteLabel(self.OVHost.hostnameOf(info.url));
+        if (!label || rules.isOpenVibeSite(label)) return;
+        masksSection.hidden = false;
+        const data = await askWorker({ type: 'mask:list', site: label });
+        if (!data || !data.site) { masksSection.hidden = true; return; }
+        const draw = function () { panel.render(masksBody, data, actions); };
+        const actions = {
+            onCopy: function (address) {
+                navigator.clipboard.writeText(address).then(
+                    function () { masksBody.querySelectorAll('button').forEach(function (b) { if (b.textContent === 'Copy') b.textContent = 'Copied'; }); },
+                    function () { /* the address stays on screen to copy by hand */ }
+                );
+            },
+            onDisable: async function (mask) {
+                await askWorker({ type: 'mask:disable', id: mask.id });
+                const fresh = await askWorker({ type: 'mask:list', site: label });
+                if (fresh && fresh.site) { data.masks = fresh.masks; data.muted = fresh.muted; }
+                draw();
+            },
+            onMute: async function (muted) {
+                await askWorker({ type: muted ? 'mask:mute' : 'mask:unmute', site: label });
+                data.muted = muted;
+                draw();
+            },
+        };
+        draw();
+        try {
+            await platform.scripting.installMaskFill(info.id);
+        } catch (e) {
+            // The browser would not let us touch that tab: the popup still lists the masks.
+        }
+    }
+
     async function render() {
         const vm = await controller.open();
         if (vm.host) site.textContent = vm.host;
         renderActions();
+        renderMasks();
         if (vm.state === 'not_a_site') return show(el('p', { text: 'Open this on a website: a shop for its coupon codes, a delivery app to compare with the others, a rental listing for your board, any page to watch.' }));
         if (vm.state === 'no_merchant') return show(el('p', { className: 'muted', text: 'No coupon codes for ' + vm.host + ' on OpenVibe.Coupons. ' }, link('Submit one', '/submit')));
         if (vm.state === 'error') return show(el('p', { text: vm.message }));
