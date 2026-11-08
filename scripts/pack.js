@@ -72,7 +72,7 @@ function listFiles(dir, base = dir) {
 }
 
 /** Copy of browser/ with the API origin rewritten (dev builds), as { name → Buffer }. */
-/** The store manifest for one browser: only drops the other browser's key (the audit runs on the full one). */
+/** The store manifest for one browser: drops the other browser's key and gives Firefox its background page (the audit runs on the full one). */
 function forTarget(files, target) {
     const m = JSON.parse(files.get('manifest.json'));
     if (target === 'chrome') {
@@ -86,6 +86,8 @@ function forTarget(files, target) {
         delete m.side_panel;
         delete m.key;   // Chrome's public key is not a Firefox manifest field
         m.permissions = (m.permissions || []).filter((p) => p !== 'sidePanel');
+        // Firefox has no background service worker: it runs the same file as a background page.
+        m.background = { scripts: ['background.js'], type: 'module' };
     } else throw new Error('target must be chrome or firefox');
     files.set('manifest.json', Buffer.from(JSON.stringify(m, null, 2) + '\n'));
 }
@@ -140,4 +142,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { build, zip, crc32, forTarget };
+module.exports = { build, zip, crc32, forTarget, sourceFiles };

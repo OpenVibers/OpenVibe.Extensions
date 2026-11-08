@@ -86,6 +86,8 @@ function unzip(buf) {
                 delete want.side_panel;
                 delete want.key;
                 want.permissions = want.permissions.filter((p) => p !== 'sidePanel');
+                // Firefox has no background service worker: it runs the same file as a background page.
+                want.background = { scripts: ['background.js'], type: 'module' };
             }
             assert.deepStrictEqual(JSON.parse(files.get('manifest.json')), want);
             assert.ok(fs.readFileSync(build({ outDir: tmp, target }).out).equals(fs.readFileSync(r.out)));
