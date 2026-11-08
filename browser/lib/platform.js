@@ -18,6 +18,8 @@
  *                           that click) and run it with the codes; returns what it saw
  *   scripting.readRating(tabId)            when the person presses "Save its rating to OpenVibe Reviews" on a review
  *                           site: inject lib/rating.js the same way and return the rating the page states
+ *   scripting.installMaskFill(tabId)       when the person opens the Companion on a tab: put the "Use a mask for <site>"
+ *                           button in the email fields of that tab (activeTab grants it for that one tab)
  *   scripting.readListing(tabId)           when the person presses "Keep on my Rent board" or "Check the rent": inject
  *                           lib/listing.js the same way and return the price, city and bedrooms the page states
  *
@@ -67,6 +69,17 @@
                     await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, files: ['lib/rating.js'] }]);
                     const out = await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, func: function () { return self.OVRating.read(document); } }]);
                     return out && out[0] ? out[0].result : null;
+                },
+                /**
+                 * Put the mask button in a tab: the rules and the page script, in the extension's own
+                 * isolated world. The page can neither read them nor reach the extension through them.
+                 * The person must have opened the Companion on that tab (activeTab), so this runs in
+                 * the tab they are looking at and nowhere else.
+                 */
+                async installMaskFill(tabId) {
+                    if (!ext.scripting || !Number.isInteger(tabId)) throw new TypeError('this browser cannot run the mask button');
+                    await call(ext.scripting.executeScript, ext.scripting, [{ target: { tabId: tabId }, files: ['lib/mask.js', 'lib/mask-fill.js'] }]);
+                    return true;
                 },
                 async readListing(tabId) {
                     if (!ext.scripting || !Number.isInteger(tabId)) throw new TypeError('this browser cannot read the page');

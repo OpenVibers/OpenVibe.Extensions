@@ -45,7 +45,9 @@ function unzip(buf) {
         const src = path.join(__dirname, '..', 'browser');
         for (const [name, data] of files) assert.ok(data.equals(fs.readFileSync(path.join(src, name))), name);
         assert.ok(files.has('manifest.json') && files.has('popup.html') && files.has('lib/api.js') && files.has('icons/icon-128.png'));
-        assert.deepStrictEqual(auditManifest(JSON.parse(files.get('manifest.json')), { apiOrigin: 'https://openvibe.coupons', origins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes'] }), []);
+        // OpenVibe.Mail is in the CSP's connect-src (the Companion reaches the masks with CORS) but it is
+        // not one of the four host permissions.
+        assert.deepStrictEqual(auditManifest(JSON.parse(files.get('manifest.json')), { apiOrigin: 'https://openvibe.coupons', origins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes'], connectOrigins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.email'] }), []);
     });
 
     await check('the build is reproducible', async () => {
@@ -60,7 +62,7 @@ function unzip(buf) {
         const files = unzip(fs.readFileSync(r.out));
         const m = JSON.parse(files.get('manifest.json'));
         assert.deepStrictEqual(m.host_permissions, ['http://localhost:4850/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*']);
-        assert.match(m.content_security_policy.extension_pages, /connect-src http:\/\/localhost:4850 https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes;/);
+        assert.match(m.content_security_policy.extension_pages, /connect-src http:\/\/localhost:4850 https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes https:\/\/openvibe\.email;/);
         assert.match(m.name, /development/);
         assert.match(files.get('lib/config.js').toString(), /API_ORIGIN: 'http:\/\/localhost:4850'/);
         assert.doesNotMatch(files.get('manifest.json').toString() + files.get('lib/config.js').toString(), /openvibe\.coupons\//);

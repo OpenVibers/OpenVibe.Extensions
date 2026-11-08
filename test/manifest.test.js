@@ -22,9 +22,12 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
         assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'identity', 'scripting', 'storage']);
         assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*']);
         assert.strictEqual(manifest.sidebar_action.default_panel, 'panel.html', 'the Dock lives in the side panel');
-        for (const k of ['content_scripts', 'background', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
+        for (const k of ['content_scripts', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
             assert.ok(!(k in manifest), `${k} must not be present`);
         }
+        // The background worker is the one place that holds the person's sign-in and talks to
+        // OpenVibe.Mail: one key, one file, one type (scripts/audit.js fails on any other shape).
+        assert.deepStrictEqual(manifest.background, { service_worker: 'background.js', type: 'module' });
     });
 
     await check('the public key fixes the Chrome id and the gecko id fixes the Firefox redirect', async () => {
@@ -90,7 +93,9 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
 
     await check('the API origin agrees across lib/config.js, host_permissions and the CSP connect-src', async () => {
         const csp = manifest.content_security_policy.extension_pages;
-        assert.match(csp, /connect-src https:\/\/openvibe\.coupons https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes;/);
+        // OpenVibe.Mail is in the CSP's connect-src (the Companion reaches the masks with CORS,
+        // the way the Coupons API lets a first-party extension in) but it is not a host permission.
+        assert.match(csp, /connect-src https:\/\/openvibe\.coupons https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes https:\/\/openvibe\.email;/);
         assert.match(csp, /style-src 'self' 'unsafe-inline';/);
         assert.match(csp, /img-src 'self' blob:;/);
         assert.match(csp, /frame-src https:\/\/openvibe\.live;/);
@@ -109,23 +114,31 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
         // browser/shared/ is the released OpenVibe.Shared Dock, bundled as it is: it is audited in its own
         // repository (OpenVibe.Shared), not here.
         (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) { if (e.name !== 'shared') walk(p); } else if (p.endsWith('.js')) files.push(p); } })(DIR);
+        // The background worker and the page script that draws the mask button are the only files that
+        // talk to the extension's own messaging (background.js answers the page, mask-fill.js asks the
+        // worker). Nothing else may message, and no page may message the extension from outside.
         const forbidden = [/\binnerHTML\b/, /\bouterHTML\b/, /insertAdjacentHTML/, /document\.write/, /\beval\s*\(/, /new Function\s*\(/, /\bcookies\b/, /document\.cookie/,
-            /\bhistory\.(search|getVisits)/, /webRequest/, /storage\.sync/, /sendMessage|onMessageExternal|runtime\.connect/, /XMLHttpRequest/, /importScripts/];
+            /\bhistory\.(search|getVisits)/, /webRequest/, /storage\.sync/, /onMessageExternal|runtime\.connect/, /XMLHttpRequest/, /importScripts/];
         for (const f of files) {
             // Comments may name what the code must not do; only code is scanned.
             const src = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"])\/\/.*$/gm, '$1');
             for (const re of forbidden) assert.doesNotMatch(src, re, `${path.relative(DIR, f)} uses ${re}`);
+            const rel0 = path.relative(DIR, f);
+            if (![path.join('background.js'), path.join('lib', 'mask-fill.js'), path.join('popup.js')].includes(rel0)) {
+                assert.doesNotMatch(src, /sendMessage/, `${rel0} messages the extension`);
+            }
             const rel = path.relative(DIR, f);
             if (!['lib/api.js', 'lib/network-api.js', 'lib/auth.js'].map((p) => path.join(...p.split('/'))).includes(rel)) assert.doesNotMatch(src.replace(/fetch: self\.fetch\.bind\(self\)/g, ''), /\bfetch\s*\(/, `${rel} makes a request itself`);
         }
         const tabUse = files.filter((f) => /\btabs\.(query|create|update)\b/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
         assert.deepStrictEqual(tabUse, [path.join('lib', 'platform.js')], 'only the platform wrapper touches tabs (it opens only hand-off pages)');
-        // The page is touched only by "Try these codes on this page", "Save its rating to OpenVibe Reviews" and the two Rent
-        // buttons ("Keep on my Rent board", "Check the rent"): platform.js injects the packaged file for that button and calls it.
-        const injects = files.filter((f) => /executeScript|ext\.scripting/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(DIR, f));
+        // The page is touched only by "Try these codes on this page", "Save its rating to OpenVibe Reviews", the two Rent
+        // buttons ("Keep on my Rent board", "Check the rent") and the mask button: platform.js injects the packaged file for that button and calls it.
+        const code = (f) => fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"])\/\/.*$/gm, '$1');
+        const injects = files.filter((f) => /executeScript|ext\.scripting/.test(code(f))).map((f) => path.relative(DIR, f));
         assert.deepStrictEqual(injects, [path.join('lib', 'platform.js')], 'only the platform wrapper runs a script in a page');
         const plat = fs.readFileSync(path.join(DIR, 'lib', 'platform.js'), 'utf8');
-        assert.deepStrictEqual([...plat.matchAll(/files:\s*\[([^\]]*)\]/g)].map((m) => m[1].trim()), ["'lib/autoapply.js'", "'lib/rating.js'", "'lib/listing.js'"], 'the three files it injects');
+        assert.deepStrictEqual([...plat.matchAll(/files:\s*\[([^\]]*)\]/g)].map((m) => m[1].trim()), ["'lib/autoapply.js'", "'lib/rating.js'", "'lib/mask.js', 'lib/mask-fill.js'", "'lib/listing.js'"], 'the files it injects');
         assert.doesNotMatch(plat, /allFrames|world:\s*['"]MAIN|tabId:(?!\s*tabId\b)/, 'the active tab only, its top frame, the isolated world');
         // What runs in the page makes no request and reads no stored data.
         for (const file of ['autoapply.js', 'rating.js', 'listing.js']) {
@@ -134,6 +147,20 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
                 assert.doesNotMatch(src, re, `lib/${file} uses ${re}`);
             }
         }
+        // The mask button is the one script that runs in a page and talks to the extension: it asks the
+        // background worker (chrome.runtime.sendMessage) and nothing else. It never fetches, never
+        // reads stored data, and never learns anything but an address and the words that go with it.
+        const fillSrc = fs.readFileSync(path.join(DIR, 'lib', 'mask-fill.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+        for (const re of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /sendBeacon/, /localStorage|sessionStorage|indexedDB/, /document\.cookie/, /\.submit\s*\(|requestSubmit/, /KeyboardEvent|keydown|keypress/]) {
+            assert.doesNotMatch(fillSrc, re, `lib/mask-fill.js uses ${re}`);
+        }
+        const fillApis = [...new Set([...fillSrc.matchAll(/\b(?:chrome|browser)\.[a-zA-Z.]+/g)].map((m) => m[0]))];
+        for (const api of fillApis) assert.match(api, /^(?:chrome|browser)\.runtime$/, `lib/mask-fill.js uses ${api}`);
+        assert.match(fillSrc, /runtime\.sendMessage\(message,/, 'the page script asks the worker and nothing else');
+        assert.doesNotMatch(fillSrc, /onMessageExternal/, 'the page cannot listen to the extension');
+        // The worker answers only the two messages a page may ask, and only a page (a tab behind it).
+        const workerSrc = fs.readFileSync(path.join(DIR, 'background.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+        assert.doesNotMatch(workerSrc, /externally_connectable|onMessageExternal/, 'the worker listens to our own pages only');
         // Reading a rating or a listing presses nothing and types nothing.
         for (const file of ['rating.js', 'listing.js']) {
             assert.doesNotMatch(fs.readFileSync(path.join(DIR, 'lib', file), 'utf8'), /\.click\s*\(|dispatchEvent|\.value\s*=|\.focus\s*\(/, `lib/${file} only reads`);
