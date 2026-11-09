@@ -24,7 +24,7 @@ async function fixture() {
         content: async (id) => ciphertexts.get(id), save: async (bytes) => { ciphertexts.set(String(ciphertexts.size + 1), bytes); return { id: '1' }; },
     };
     const storage = { getSession: async (k) => memory.get(k), setSession: async (obj) => { writes.push(obj); for (const [k, v] of Object.entries(obj)) memory.set(k, v); }, removeSession: async (keys) => keys.forEach((k) => memory.delete(k)) };
-    const options = { core, payload, passwords, api, fillApi: { requests: async () => ({ requests: [] }), targets: async () => ({ machines: [] }), grant: async () => ({ outcome: 'ok' }) }, storage, scheduleLock: async () => {}, cancelLock: async () => {}, tabs: { active: async () => active }, fill: async (...args) => { fills.push(args); return { ok: true }; }, clipboard: { write: async (v) => clipboard.push(v) }, account: async () => account, now: () => clock };
+    const options = { core, payload, passwords, api, fillApi: { requests: async () => ({ requests: [{ id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_node_id: 'nod_01JAB2C3D4E5F6G7H8J9K0MNPQ', expires_at: 60_000 }] }), targets: async () => ({ machines: [{ id: 'nod_01JAB2C3D4E5F6G7H8J9K0MNPQ', public_key: options.nodeKey, thumbprint: 'network-thumbprint' }] }), grant: async () => ({ outcome: 'ok' }) }, storage, scheduleLock: async () => {}, cancelLock: async () => {}, tabs: { active: async () => active }, fill: async (...args) => { fills.push(args); return { ok: true }; }, clipboard: { write: async (v) => clipboard.push(v) }, account: async () => account, now: () => clock };
     const vault = create(options);
     const ask = (type, values = {}, sender = { url: POPUP }) => vault.handle({ type: 'locker:' + type, tabId: 1, site: 'https://example.test', ...values }, sender, POPUP);
     return { vault, ask, memory, fills, clipboard, api, options, writes, pass, recovery, ciphertexts,
@@ -91,9 +91,13 @@ test('Companion seals a selected login to one machine and returns ciphertext onl
     const f = await fixture(); await f.ask('unlock', { clicked: true, secret: f.pass });
     await f.ask('save', { clicked: true, username: 'alice', password: 'fixture password', totp: 'otpauth://totp/x?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ' });
     const node = await core.generatePersonKeys(), machine = 'nod_01JAB2C3D4E5F6G7H8J9K0MNPQ';
+    f.options.nodeKey = node.ecdhPublic;
     await assert.rejects(f.ask('seal-fill', { clicked: true, request_id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'http://example.test', machine_id: machine, public_key: node.ecdhPublic, item_id: '1', include_code: true, submit: false }), /valid sign-in request/);
-    const sealed = await f.ask('seal-fill', { clicked: true, request_id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_id: machine, public_key: node.ecdhPublic, item_id: '1', include_code: true, submit: false });
+    const other = await core.generatePersonKeys();
+    const sealed = await f.ask('seal-fill', { clicked: true, request_id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_id: machine, public_key: other.ecdhPublic, item_id: '1', include_code: true, submit: false });
     assert.equal(sealed.ok, true);
+    assert.equal(sealed.thumbprint, 'network-thumbprint');
+    await assert.rejects(core.open(Uint8Array.from(Buffer.from(sealed.envelope, 'base64')), { privateKey: other.ecdh.privateKey, subject: { type: 'node', id: machine } }));
     assert.ok(!sealed.envelope.includes('fixture password'));
     const plain = await core.open(Uint8Array.from(Buffer.from(sealed.envelope, 'base64')), { privateKey: node.ecdh.privateKey, subject: { type: 'node', id: machine } });
     const grant = JSON.parse(new TextDecoder().decode(plain));
@@ -102,6 +106,18 @@ test('Companion seals a selected login to one machine and returns ciphertext onl
     });
     assert.match(grant.code, /^\d{6}$/);
     assert.ok(grant.exp > 1000 && grant.exp <= 61_000);
+});
+
+test('seal-fill rechecks pending request and owned target before creating an envelope', async () => {
+    const f = await fixture(); await f.ask('unlock', { clicked: true, secret: f.pass });
+    await f.ask('save', { clicked: true, username: 'alice', password: 'fixture password' });
+    const machine = 'nod_01JAB2C3D4E5F6G7H8J9K0MNPQ';
+    f.options.nodeKey = (await core.generatePersonKeys()).ecdhPublic;
+    f.options.fillApi.requests = async () => ({ requests: [] });
+    await assert.rejects(f.ask('seal-fill', { clicked: true, request_id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_id: machine, item_id: '1' }), /no longer waiting/);
+    f.options.fillApi.requests = async () => ({ requests: [{ id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_node_id: machine, expires_at: 60_000 }] });
+    f.options.fillApi.targets = async () => ({ machines: [] });
+    await assert.rejects(f.ask('seal-fill', { clicked: true, request_id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_id: machine, item_id: '1' }), /not one of yours/);
 });
 
 function page({ site = 'https://example.test', frame = false, clicked = true, submit = false, hidden = false, transparentParent = false, navigate = false } = {}) {

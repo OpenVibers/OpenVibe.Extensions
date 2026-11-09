@@ -40,12 +40,13 @@
                     if (!isUnlocked) throw new Error('Unlock Locker to review this sign-in request.');
                     const targets = await request('fill-targets', { clicked: true });
                     const target = targets.machines.find((x) => x.id === fill.machine_node_id);
-                    if (!target) throw new Error('The requested computer is not eligible or has no Link Send key.');
+                    if (!target) throw new Error('That computer is not one of yours, so nothing can be sent to it.');
                     const logins = await request('fill-site-list', { origin: fill.origin, clicked: true });
                     if (!logins.items.length) throw new Error('No saved login matches this exact origin.');
                     const chooser = make('div');
                     chooser.append(make('p', 'This will type the username and password into the top-level page.', 'note muted'));
-                    chooser.append(make('p', `Computer key thumbprint: ${target.thumbprint}`, 'locker-origin'));
+                    const keyLabel = make('p', `Computer key thumbprint: ${target.thumbprint}`, 'locker-origin');
+                    chooser.append(keyLabel);
                     const label = make('label', 'Saved login', 'locker-field'); const select = make('select');
                     for (const item of logins.items) { const option = make('option', item.username || 'No username'); option.value = item.id; select.append(option); }
                     label.append(select); chooser.append(label);
@@ -57,7 +58,8 @@
                     const submit = make('input'); submit.type = 'checkbox';
                     const submitLabel = make('label', 'Submit the sign-in form after filling', 'locker-field'); submitLabel.prepend(submit); chooser.append(submitLabel);
                     const approve = button('Seal and approve', async () => {
-                        const result = await request('seal-fill', { clicked: true, request_id: fill.id, origin: fill.origin, machine_id: target.id, public_key: target.public_key, item_id: select.value, include_code: code.checked, submit: submit.checked });
+                        const result = await request('seal-fill', { clicked: true, request_id: fill.id, origin: fill.origin, machine_id: target.id, item_id: select.value, include_code: code.checked, submit: submit.checked });
+                        keyLabel.textContent = `Sealed to computer key thumbprint: ${result.thumbprint}`;
                         const completed = await request('fill-grant', { clicked: true, request_id: fill.id, envelope: result.envelope });
                         chooser.replaceChildren(make('p', completed.outcome === 'ok' ? 'Sign-in filled.' : 'The computer could not complete the sign-in.', 'note'));
                         await loadFillRequests();

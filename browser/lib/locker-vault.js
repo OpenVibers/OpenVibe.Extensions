@@ -95,16 +95,22 @@
                 if (!fillApi || m.clicked !== true || !FILL_REQUEST_ID.test(String(m.request_id || '')) || typeof m.origin !== 'string' || !EXACT_HTTPS_ORIGIN.test(m.origin) || origin(m.origin) !== m.origin
                     || !/^nod_[0-9A-HJKMNP-TV-Z]{26}$/.test(String(m.machine_id || '')) || typeof m.item_id !== 'string') throw new Error('Choose a valid sign-in request.');
                 const s = await unlocked();
+                const requests = await fillApi.requests();
+                const pending = (requests.requests || []).find((r) => r.id === m.request_id && r.origin === m.origin && r.machine_node_id === m.machine_id && r.expires_at > now());
+                if (!pending) throw new Error('That sign-in request is no longer waiting.');
+                const targets = await fillApi.targets();
+                const target = (targets.machines || []).find((machine) => machine.id === m.machine_id);
+                if (!target || typeof target.public_key !== 'object' || typeof target.thumbprint !== 'string') throw new Error('That computer is not one of yours, so nothing can be sent to it.');
                 const login = await read(m.item_id, s);
                 if (login.site !== m.origin) throw new Error('This saved login belongs to a different site.');
                 const grant = { request_id: m.request_id, origin: m.origin, username: login.username, password: login.password, submit: m.submit === true, exp: now() + 60_000 };
                 if (m.include_code === true && login.totp) grant.code = await passwords.totp(login.totp);
                 const plain = new TextEncoder().encode(JSON.stringify(grant));
                 try {
-                    const envelope = await core.seal(plain, { lock: 'people', keys: [{ subject: { type: 'node', id: m.machine_id }, publicKey: m.public_key }] });
+                    const envelope = await core.seal(plain, { lock: 'people', keys: [{ subject: { type: 'node', id: m.machine_id }, publicKey: target.public_key }] });
                     await still(s);
                     let binary = ''; for (const b of envelope.bytes) binary += String.fromCharCode(b);
-                    return { ok: true, envelope: btoa(binary) };
+                    return { ok: true, envelope: btoa(binary), thumbprint: target.thumbprint };
                 } finally {
                     plain.fill(0); grant.username = ''; grant.password = ''; grant.code = '';
                     login.username = ''; login.password = ''; login.totp = '';
