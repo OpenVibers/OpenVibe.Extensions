@@ -93,7 +93,7 @@
             }
             if (action === 'seal-fill') {
                 if (!fillApi || m.clicked !== true || !FILL_REQUEST_ID.test(String(m.request_id || '')) || typeof m.origin !== 'string' || !EXACT_HTTPS_ORIGIN.test(m.origin) || origin(m.origin) !== m.origin
-                    || !/^nod_[0-9A-HJKMNP-TV-Z]{26}$/.test(String(m.machine_id || '')) || typeof m.item_id !== 'string') throw new Error('Choose a valid sign-in request.');
+                    || !/^lnk_[0-9A-HJKMNP-TV-Z]{26}$/.test(String(m.machine_id || '')) || typeof m.item_id !== 'string') throw new Error('Choose a valid sign-in request.');
                 const s = await unlocked();
                 const requests = await fillApi.requests();
                 const pending = (requests.requests || []).find((r) => r.id === m.request_id && r.origin === m.origin && r.machine_node_id === m.machine_id && r.expires_at > now());
@@ -107,7 +107,7 @@
                 if (m.include_code === true && login.totp) grant.code = await passwords.totp(login.totp);
                 const plain = new TextEncoder().encode(JSON.stringify(grant));
                 try {
-                    const envelope = await core.seal(plain, { lock: 'people', keys: [{ subject: { type: 'node', id: m.machine_id }, publicKey: target.public_key }] });
+                    const envelope = await core.seal(plain, { lock: 'people', keys: [{ subject: { type: 'link', id: m.machine_id }, publicKey: target.public_key }] });
                     await still(s);
                     let binary = ''; for (const b of envelope.bytes) binary += String.fromCharCode(b);
                     return { ok: true, envelope: btoa(binary), thumbprint: target.thumbprint };
