@@ -65,7 +65,7 @@ function fetcher(responses) {
                 assert.strictEqual(u.searchParams.get('client_id'), 'companion');
                 assert.strictEqual(u.searchParams.get('redirect_uri'), CHROME);
                 assert.strictEqual(u.searchParams.get('response_type'), 'code');
-                assert.strictEqual(u.searchParams.get('scope'), 'dock activity chat.read agent.view mail.mask.manage locker.login.manage');
+                assert.strictEqual(u.searchParams.get('scope'), 'dock activity chat.read agent.view mail.mask.manage locker.login.manage run.fill.approve');
                 assert.strictEqual(u.searchParams.get('code_challenge_method'), 'S256');
                 assert.match(state, /^[A-Za-z0-9_-]{43}$/);
                 issuedChallenge = u.searchParams.get('code_challenge');
@@ -73,7 +73,8 @@ function fetcher(responses) {
                 return Promise.resolve(`${CHROME}?code=code123&state=${encodeURIComponent(state)}`);
             },
         });
-        const f = fetcher([{ status: 200, body: { access_token: token(), refresh_token: 'r'.repeat(96), expires_in: 3600, scope: 'dock activity chat.read' } }]);
+        const granted = 'dock activity chat.read agent.view mail.mask.manage locker.login.manage run.fill.approve';
+        const f = fetcher([{ status: 200, body: { access_token: token(), refresh_token: 'r'.repeat(96), expires_in: 3600, scope: granted } }]);
         const auth = createAuth({ platform: p, config, fetch: f });
         const acc = await auth.signIn();
         assert.strictEqual(acc.token, token());
@@ -92,7 +93,7 @@ function fetcher(responses) {
         assert.strictEqual(p.session.get(config.DOCK_ACCESS_KEY).expires_at > Date.now(), true);
         assert.strictEqual(p.local.get(config.DOCK_REFRESH_KEY).token, 'r'.repeat(96));
         assert.deepStrictEqual(p.local.get(config.DOCK_ACCOUNT_KEY), { sub: 7, username: 'ada', display_name: 'Ada' });
-        assert.deepStrictEqual(await auth.scopes(), ['dock', 'activity', 'chat.read']);
+        assert.deepStrictEqual(await auth.scopes(), granted.split(' '));
         assert.strictEqual((await auth.status()).mode, 'oauth');
     });
 

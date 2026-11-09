@@ -14,6 +14,7 @@
 import './lib/config.js';
 import './lib/platform.js';
 import './lib/auth.js';
+import './lib/network-api.js';
 import './lib/mask.js';
 import './lib/mask-service.js';
 import './lib/mail-api.js';
@@ -56,8 +57,10 @@ function isOwnPage(sender) {
 const router = self.OVMaskRouter.createRouter({ rules: self.OVMask, service: service, isOwnPage: isOwnPage });
 
 const lockerApi = self.OVLockerApi.create({ origin: config.LOCKER_ORIGIN, fetch: self.fetch.bind(self), getToken: () => auth.accessToken() });
+const fillApi = self.OVNetwork.createFillClient({ networkOrigin: config.NETWORK_ORIGIN, runOrigin: config.RUN_ORIGIN, fetch: self.fetch.bind(self), getToken: () => auth.accessToken() });
 const vault = self.OVLockerVault.create({
     core: self.OVLockerCore, payload: self.LockerPayload, passwords: self.LockerPasswords, api: lockerApi,
+    fillApi,
     storage: platform.storage, tabs: platform.tabs, fill: platform.scripting.fillLogin,
     clipboard: platform.clipboard,
     account: async () => { const a = await auth.account(); return a?.sub || (await auth.status()).mode; },

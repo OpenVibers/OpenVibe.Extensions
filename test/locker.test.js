@@ -24,7 +24,7 @@ async function fixture() {
         content: async (id) => ciphertexts.get(id), save: async (bytes) => { ciphertexts.set(String(ciphertexts.size + 1), bytes); return { id: '1' }; },
     };
     const storage = { getSession: async (k) => memory.get(k), setSession: async (obj) => { writes.push(obj); for (const [k, v] of Object.entries(obj)) memory.set(k, v); }, removeSession: async (keys) => keys.forEach((k) => memory.delete(k)) };
-    const options = { core, payload, passwords, api, storage, scheduleLock: async () => {}, cancelLock: async () => {}, tabs: { active: async () => active }, fill: async (...args) => { fills.push(args); return { ok: true }; }, clipboard: { write: async (v) => clipboard.push(v) }, account: async () => account, now: () => clock };
+    const options = { core, payload, passwords, api, fillApi: { requests: async () => ({ requests: [] }), targets: async () => ({ machines: [] }), grant: async () => ({ outcome: 'ok' }) }, storage, scheduleLock: async () => {}, cancelLock: async () => {}, tabs: { active: async () => active }, fill: async (...args) => { fills.push(args); return { ok: true }; }, clipboard: { write: async (v) => clipboard.push(v) }, account: async () => account, now: () => clock };
     const vault = create(options);
     const ask = (type, values = {}, sender = { url: POPUP }) => vault.handle({ type: 'locker:' + type, tabId: 1, site: 'https://example.test', ...values }, sender, POPUP);
     return { vault, ask, memory, fills, clipboard, api, options, writes, pass, recovery, ciphertexts,
@@ -85,6 +85,22 @@ test('locking during a pending decrypt cancels the fill', async () => {
     f.api.content = () => { entered(); return new Promise((r) => { release = r; }); };
     const pending = f.ask('fill', { id: '1', clicked: true }); await started; await f.vault.lock(); release(f.ciphertexts.get('1'));
     await assert.rejects(pending, /locked/); assert.equal(f.fills.length, 0);
+});
+
+test('Companion seals a selected login to one machine and returns ciphertext only', async () => {
+    const f = await fixture(); await f.ask('unlock', { clicked: true, secret: f.pass });
+    await f.ask('save', { clicked: true, username: 'alice', password: 'fixture password', totp: 'otpauth://totp/x?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ' });
+    const node = await core.generatePersonKeys(), machine = 'nod_01JAB2C3D4E5F6G7H8J9K0MNPQ';
+    const sealed = await f.ask('seal-fill', { clicked: true, request_id: 'fill_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_id: machine, public_key: node.ecdhPublic, item_id: '1', include_code: true, submit: false });
+    assert.equal(sealed.ok, true);
+    assert.ok(!sealed.envelope.includes('fixture password'));
+    const plain = await core.open(Uint8Array.from(Buffer.from(sealed.envelope, 'base64')), { privateKey: node.ecdh.privateKey, subject: { type: 'node', id: machine } });
+    const grant = JSON.parse(new TextDecoder().decode(plain));
+    assert.deepEqual({ request_id: grant.request_id, origin: grant.origin, username: grant.username, password: grant.password, submit: grant.submit }, {
+        request_id: 'fill_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', username: 'alice', password: 'fixture password', submit: false,
+    });
+    assert.match(grant.code, /^\d{6}$/);
+    assert.ok(grant.exp > 1000 && grant.exp <= 61_000);
 });
 
 function page({ site = 'https://example.test', frame = false, clicked = true, submit = false, hidden = false, transparentParent = false, navigate = false } = {}) {
