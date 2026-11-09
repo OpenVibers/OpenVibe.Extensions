@@ -4,6 +4,8 @@
 })(globalThis, function () {
     'use strict';
     const IDLE = 15 * 60 * 1000, KEY = 'lockerUnlock';
+    const EXACT_HTTPS_ORIGIN = /^https:\/\/[a-z0-9.-]+(:[0-9]{1,5})?$/;
+    const FILL_REQUEST_ID = /^fr_[A-Za-z0-9_-]{16,64}$/;
     function origin(url) {
         try { const u = new URL(url); return ['https:', 'http:'].includes(u.protocol) && !u.username && !u.password ? u.origin : null; } catch { return null; }
     }
@@ -78,7 +80,7 @@
                 return { ok: true, outcome: data.outcome === 'ok' ? 'ok' : 'failed', reason: data.reason || null };
             }
             if (action === 'fill-site-list') {
-                if (m.clicked !== true || typeof m.origin !== 'string' || origin(m.origin) !== m.origin) throw new Error('Choose a valid site.');
+                if (m.clicked !== true || typeof m.origin !== 'string' || !EXACT_HTTPS_ORIGIN.test(m.origin) || origin(m.origin) !== m.origin) throw new Error('Choose a valid site.');
                 const s = await unlocked();
                 const items = [];
                 for (const item of await api.list()) {
@@ -90,7 +92,7 @@
                 return { ok: true, items };
             }
             if (action === 'seal-fill') {
-                if (!fillApi || m.clicked !== true || typeof m.request_id !== 'string' || typeof m.origin !== 'string' || origin(m.origin) !== m.origin
+                if (!fillApi || m.clicked !== true || !FILL_REQUEST_ID.test(String(m.request_id || '')) || typeof m.origin !== 'string' || !EXACT_HTTPS_ORIGIN.test(m.origin) || origin(m.origin) !== m.origin
                     || !/^nod_[0-9A-HJKMNP-TV-Z]{26}$/.test(String(m.machine_id || '')) || typeof m.item_id !== 'string') throw new Error('Choose a valid sign-in request.');
                 const s = await unlocked();
                 const login = await read(m.item_id, s);

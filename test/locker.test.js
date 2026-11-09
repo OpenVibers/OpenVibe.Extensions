@@ -91,13 +91,14 @@ test('Companion seals a selected login to one machine and returns ciphertext onl
     const f = await fixture(); await f.ask('unlock', { clicked: true, secret: f.pass });
     await f.ask('save', { clicked: true, username: 'alice', password: 'fixture password', totp: 'otpauth://totp/x?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ' });
     const node = await core.generatePersonKeys(), machine = 'nod_01JAB2C3D4E5F6G7H8J9K0MNPQ';
-    const sealed = await f.ask('seal-fill', { clicked: true, request_id: 'fill_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_id: machine, public_key: node.ecdhPublic, item_id: '1', include_code: true, submit: false });
+    await assert.rejects(f.ask('seal-fill', { clicked: true, request_id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'http://example.test', machine_id: machine, public_key: node.ecdhPublic, item_id: '1', include_code: true, submit: false }), /valid sign-in request/);
+    const sealed = await f.ask('seal-fill', { clicked: true, request_id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', machine_id: machine, public_key: node.ecdhPublic, item_id: '1', include_code: true, submit: false });
     assert.equal(sealed.ok, true);
     assert.ok(!sealed.envelope.includes('fixture password'));
     const plain = await core.open(Uint8Array.from(Buffer.from(sealed.envelope, 'base64')), { privateKey: node.ecdh.privateKey, subject: { type: 'node', id: machine } });
     const grant = JSON.parse(new TextDecoder().decode(plain));
     assert.deepEqual({ request_id: grant.request_id, origin: grant.origin, username: grant.username, password: grant.password, submit: grant.submit }, {
-        request_id: 'fill_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', username: 'alice', password: 'fixture password', submit: false,
+        request_id: 'fr_01JAB2C3D4E5F6G7H8J9K0MNPQ', origin: 'https://example.test', username: 'alice', password: 'fixture password', submit: false,
     });
     assert.match(grant.code, /^\d{6}$/);
     assert.ok(grant.exp > 1000 && grant.exp <= 61_000);
