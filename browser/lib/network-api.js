@@ -64,5 +64,27 @@
         };
     }
 
-    return { createNetworkClient: createNetworkClient };
+    function createFillClient(opts) {
+        const networkOrigin = String(opts.networkOrigin || '').replace(/\/+$/, '');
+        const runOrigin = String(opts.runOrigin || '').replace(/\/+$/, '');
+        const doFetch = opts.fetch;
+        const getToken = opts.getToken || async function () { return null; };
+        async function request(origin, path, method = 'GET', body) {
+            let res;
+            try {
+                res = await doFetch(origin + path, { method, headers: { Accept: 'application/json', Authorization: 'Bearer ' + await getToken(), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+                    ...(body ? { body: JSON.stringify(body) } : {}), credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error', signal: AbortSignal.timeout(15000) });
+            } catch { throw new Error('could not reach the sign-in approval service'); }
+            if (res.status === 401 || res.status === 403) throw new Error('Sign in again to approve a sign-in from Companion.');
+            if (!res.ok) throw new Error('The sign-in request is no longer available.');
+            return res.json();
+        }
+        return {
+            requests: () => request(runOrigin, '/api/v1/fill-requests'),
+            targets: () => request(networkOrigin, '/api/v1/me/keys/fill-targets'),
+            grant: (id, envelope) => request(runOrigin, '/api/v1/fill-requests/' + encodeURIComponent(id) + '/grant', 'POST', { request_id: id, envelope }),
+        };
+    }
+
+    return { createNetworkClient: createNetworkClient, createFillClient: createFillClient };
 });

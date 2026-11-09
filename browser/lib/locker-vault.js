@@ -4,10 +4,12 @@
 })(globalThis, function () {
     'use strict';
     const IDLE = 15 * 60 * 1000, KEY = 'lockerUnlock';
+    const EXACT_HTTPS_ORIGIN = /^https:\/\/[a-z0-9.-]+(:[0-9]{1,5})?$/;
+    const FILL_REQUEST_ID = /^fr_[A-Za-z0-9_-]{16,64}$/;
     function origin(url) {
         try { const u = new URL(url); return ['https:', 'http:'].includes(u.protocol) && !u.username && !u.password ? u.origin : null; } catch { return null; }
     }
-    function create({ core, payload, passwords, api, storage, scheduleLock, cancelLock, tabs, fill, clipboard, account, now = Date.now }) {
+    function create({ core, payload, passwords, api, fillApi = null, storage, scheduleLock, cancelLock, tabs, fill, clipboard, account, now = Date.now }) {
         let generation = 0, mutations = Promise.resolve();
         function persist(saved, version) {
             mutations = mutations.catch(() => {}).then(async () => {
@@ -62,6 +64,58 @@
             if (m.clicked !== true && action !== 'list') return { ok: false };
             if (action === 'activity') return { ok: true, locked: !(await state(true)) };
             if (action === 'lock') return { ok: true, ...await lock() };
+            if (action === 'fill-list') {
+                if (!fillApi) throw new Error('Sign-in approvals are unavailable.');
+                const data = await fillApi.requests();
+                return { ok: true, requests: Array.isArray(data.requests) ? data.requests : [] };
+            }
+            if (action === 'fill-targets') {
+                if (!fillApi) throw new Error('Sign-in approvals are unavailable.');
+                const data = await fillApi.targets();
+                return { ok: true, machines: Array.isArray(data.machines) ? data.machines : [] };
+            }
+            if (action === 'fill-grant') {
+                if (!fillApi || typeof m.request_id !== 'string' || typeof m.envelope !== 'string' || m.clicked !== true) throw new Error('Choose a sign-in request first.');
+                const data = await fillApi.grant(m.request_id, m.envelope);
+                return { ok: true, outcome: data.outcome === 'ok' ? 'ok' : 'failed', reason: data.reason || null };
+            }
+            if (action === 'fill-site-list') {
+                if (m.clicked !== true || typeof m.origin !== 'string' || !EXACT_HTTPS_ORIGIN.test(m.origin) || origin(m.origin) !== m.origin) throw new Error('Choose a valid site.');
+                const s = await unlocked();
+                const items = [];
+                for (const item of await api.list()) {
+                    const login = await read(item.id, s);
+                    if (login.site === m.origin) items.push({ id: item.id, username: login.username, hasTotp: !!login.totp });
+                    login.username = ''; login.password = ''; login.totp = '';
+                }
+                await still(s);
+                return { ok: true, items };
+            }
+            if (action === 'seal-fill') {
+                if (!fillApi || m.clicked !== true || !FILL_REQUEST_ID.test(String(m.request_id || '')) || typeof m.origin !== 'string' || !EXACT_HTTPS_ORIGIN.test(m.origin) || origin(m.origin) !== m.origin
+                    || !/^nod_[0-9A-HJKMNP-TV-Z]{26}$/.test(String(m.machine_id || '')) || typeof m.item_id !== 'string') throw new Error('Choose a valid sign-in request.');
+                const s = await unlocked();
+                const requests = await fillApi.requests();
+                const pending = (requests.requests || []).find((r) => r.id === m.request_id && r.origin === m.origin && r.machine_node_id === m.machine_id && r.expires_at > now());
+                if (!pending) throw new Error('That sign-in request is no longer waiting.');
+                const targets = await fillApi.targets();
+                const target = (targets.machines || []).find((machine) => machine.id === m.machine_id);
+                if (!target || typeof target.public_key !== 'object' || typeof target.thumbprint !== 'string') throw new Error('That computer is not one of yours, so nothing can be sent to it.');
+                const login = await read(m.item_id, s);
+                if (login.site !== m.origin) throw new Error('This saved login belongs to a different site.');
+                const grant = { request_id: m.request_id, origin: m.origin, username: login.username, password: login.password, submit: m.submit === true, exp: now() + 60_000 };
+                if (m.include_code === true && login.totp) grant.code = await passwords.totp(login.totp);
+                const plain = new TextEncoder().encode(JSON.stringify(grant));
+                try {
+                    const envelope = await core.seal(plain, { lock: 'people', keys: [{ subject: { type: 'node', id: m.machine_id }, publicKey: target.public_key }] });
+                    await still(s);
+                    let binary = ''; for (const b of envelope.bytes) binary += String.fromCharCode(b);
+                    return { ok: true, envelope: btoa(binary), thumbprint: target.thumbprint };
+                } finally {
+                    plain.fill(0); grant.username = ''; grant.password = ''; grant.code = '';
+                    login.username = ''; login.password = ''; login.totp = '';
+                }
+            }
             if (action === 'unlock') {
                 await lock(); const g = generation;
                 const owner = await account();
