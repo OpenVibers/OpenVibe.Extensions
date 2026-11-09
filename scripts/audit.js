@@ -38,7 +38,7 @@ const path = require('path');
 const ALLOWED_KEYS = new Set(['manifest_version', 'name', 'short_name', 'version', 'description', 'homepage_url', 'author', 'icons',
     'action', 'options_ui', 'permissions', 'host_permissions', 'content_security_policy', 'minimum_chrome_version', 'browser_specific_settings',
     'side_panel', 'sidebar_action', 'key', 'background']);
-const BASE_PERMISSIONS = ['activeTab', 'identity', 'scripting', 'storage'];
+const BASE_PERMISSIONS = ['activeTab', 'alarms', 'clipboardWrite', 'identity', 'offscreen', 'scripting', 'storage'];
 const SIDE_PERMISSIONS = ['sidePanel', 'sidebarAction'];
 const PERMISSIONS = BASE_PERMISSIONS.concat(['sidePanel']);
 const BACKGROUND = { service_worker: 'background.js', type: 'module' };
@@ -119,16 +119,17 @@ function auditDir(dir) {
     const chat = (configSrc.match(/CHAT_ORIGIN:\s*'([^']+)'/) || [])[1];
     const codes = (configSrc.match(/CODES_ORIGIN:\s*'([^']+)'/) || [])[1];
     const mail = (configSrc.match(/MAIL_ORIGIN:\s*'([^']+)'/) || [])[1];
+    const locker = (configSrc.match(/LOCKER_ORIGIN:\s*'([^']+)'/) || [])[1];
     const handoffs = ((configSrc.match(/HANDOFF_ORIGINS:\s*Object\.freeze\(\[([^\]]*)\]\)/) || [])[1] || '').split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
     const problems = [];
     if (!origin) problems.push('lib/config.js has no API_ORIGIN');
     if (!handoffs.length) problems.push('lib/config.js has no HANDOFF_ORIGINS');
     for (const h of handoffs) if (!/^https:\/\/openvibe\.[a-z]+$/.test(h)) problems.push(`hand-off origin ${h} is not an https://openvibe.<tld> site`);
-    const origins = [origin, network, chat, codes].filter(Boolean);
-    for (const o of [network, chat, codes, mail].filter(Boolean)) if (!/^https:\/\/openvibe\.[a-z]+$/.test(o)) problems.push(`${o} is not an https://openvibe.<tld> site`);
+    const origins = [origin, network, chat, codes, locker].filter(Boolean);
+    for (const o of [network, chat, codes, mail, locker].filter(Boolean)) if (!/^https:\/\/openvibe\.[a-z]+$/.test(o)) problems.push(`${o} is not an https://openvibe.<tld> site`);
     const connectOrigins = origins.concat(mail ? [mail] : []);
     problems.push(...auditManifest(manifest, { apiOrigin: origin, origins, connectOrigins }));
-    for (const page of ['popup.html', 'options.html', 'panel.html']) problems.push(...auditPage(fs.readFileSync(path.join(dir, page), 'utf8'), page));
+    for (const page of ['popup.html', 'options.html', 'panel.html', 'clipboard.html']) problems.push(...auditPage(fs.readFileSync(path.join(dir, page), 'utf8'), page));
     return { manifest, origin, origins, connectOrigins, problems };
 }
 

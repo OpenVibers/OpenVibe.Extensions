@@ -18,6 +18,13 @@ import './lib/mask.js';
 import './lib/mask-service.js';
 import './lib/mail-api.js';
 import './lib/mask-router.js';
+import './shared/ov-locker-core.js';
+import './lib/locker-passwords.js';
+import './lib/locker-payload.js';
+import './lib/locker-api.js';
+import './lib/locker-fill.js';
+import './lib/locker-clipboard.js';
+import './lib/locker-vault.js';
 
 const ext = self.browser || self.chrome;
 const config = self.OVConfig;
@@ -48,10 +55,38 @@ function isOwnPage(sender) {
 
 const router = self.OVMaskRouter.createRouter({ rules: self.OVMask, service: service, isOwnPage: isOwnPage });
 
+const lockerApi = self.OVLockerApi.create({ origin: config.LOCKER_ORIGIN, fetch: self.fetch.bind(self), getToken: () => auth.accessToken() });
+const vault = self.OVLockerVault.create({
+    core: self.OVLockerCore, payload: self.LockerPayload, passwords: self.LockerPasswords, api: lockerApi,
+    storage: platform.storage, tabs: platform.tabs, fill: platform.scripting.fillLogin,
+    clipboard: platform.clipboard,
+    account: async () => { const a = await auth.account(); return a?.sub || (await auth.status()).mode; },
+    scheduleLock: (when) => ext.alarms.create('locker-lock', { when }), cancelLock: () => ext.alarms.clear('locker-lock'),
+});
+ext.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'locker-lock') vault.state().catch(() => vault.lock());
+    if (alarm.name === 'locker-clipboard-clear') platform.clipboard.clear().catch(() => {});
+});
+// Restore the deadline if a browser dropped an alarm while suspending the worker.
+vault.state().then((saved) => { if (saved) return ext.alarms.create('locker-lock', { when: saved.expires }); }).catch(() => vault.lock());
+ext.runtime.onStartup.addListener(() => { vault.lock(); });
+ext.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && (changes[config.DOCK_ACCOUNT_KEY] || changes[config.NETWORK_TOKEN_KEY])) vault.lock();
+});
+
 ext.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    router.handle(message, sender).then(
+    if (message?.target === 'locker-clipboard') return false;
+    if (message?.type === 'locker:signin') {
+        if (sender?.url !== ext.runtime.getURL('popup.html') || sender.tab || message.clicked !== true) { sendResponse({ ok: false }); return false; }
+        vault.lock().then(() => auth.signIn()).then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
+        return true;
+    }
+    const operation = message?.type?.startsWith('locker:')
+        ? vault.handle(message, sender, ext.runtime.getURL('popup.html'))
+        : router.handle(message, sender);
+    operation.then(
         function (answer) { sendResponse(answer || { ok: false }); },
-        function () { sendResponse({ ok: false, message: 'Something went wrong. Try again later.' }); }
+        function (error) { sendResponse({ ok: false, message: message?.type?.startsWith('locker:') ? (error.message.startsWith('That passphrase') || /^(Unlock |Sign in |Use your |The active tab |This login |Enter a username)/.test(error.message) ? error.message : 'Locker could not complete that action. Unlock again and retry.') : 'Something went wrong. Try again later.' }); }
     );
     return true;
 });

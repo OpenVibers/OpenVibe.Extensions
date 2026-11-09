@@ -75,8 +75,8 @@ the Companion never rewrites links or adds referral tags.
 
 | | |
 |---|---|
-| **Permissions** | `activeTab`, `identity`, `scripting`, `storage`, and `sidePanel` in the Chrome build (Firefox's `sidebar_action` needs no permission of its own). The host permissions are four OpenVibe origins: `https://openvibe.coupons/*` (the coupon API), `https://openvibe.network/*` (the Dock's state), `https://openvibe.codes/*` (the Dock's agent view and its four controls) and `https://openvibe.chat/*` (the Dock's Chats tab). `identity` starts the Dock's one-click OAuth sign-in (`chrome.identity.launchWebAuthFlow` / Firefox's `browser.identity`). `scripting` is used for four buttons: "Try these codes on this page" injects the packaged `lib/autoapply.js`, "Save its rating to OpenVibe Reviews" injects `lib/rating.js`, and "Keep on my Rent board" and "Check the rent" inject `lib/listing.js`, into the active tab (the access `activeTab` gives after you press the button), in its top frame and the extension's isolated world. |
-| **Not requested** | `<all_urls>`, `tabs`, `cookies`, `webRequest`, `history`, optional permissions, content scripts, a background worker, web-accessible resources, `externally_connectable`. |
+| **Permissions** | `activeTab`, `identity`, `scripting`, `storage`, `alarms`, `clipboardWrite`, and Chrome-only `offscreen` and `sidePanel` in the Chrome build (Firefox's `sidebar_action` needs no permission of its own). The host permissions are five OpenVibe origins: `https://openvibe.coupons/*` (the coupon API), `https://openvibe.network/*` (the Dock's state), `https://openvibe.codes/*` (the Dock's agent view and its four controls) and `https://openvibe.chat/*` (the Dock's Chats tab), plus `https://openvibe.locker/*` (encrypted password logins). `identity` starts the Dock's one-click OAuth sign-in (`chrome.identity.launchWebAuthFlow` / Firefox's `browser.identity`). `scripting` is used for four buttons: "Try these codes on this page" injects the packaged `lib/autoapply.js`, "Save its rating to OpenVibe Reviews" injects `lib/rating.js`, and "Keep on my Rent board" and "Check the rent" inject `lib/listing.js`, into the active tab (the access `activeTab` gives after you press the button), in its top frame and the extension's isolated world. |
+| **Not requested** | `<all_urls>`, `tabs`, `cookies`, `webRequest`, `history`, optional permissions, content scripts, web-accessible resources, `externally_connectable`. |
 | **Read from the page** | The active tab's **URL and title**, when you open the popup (that's what `activeTab` grants). The page's content only when you press "Try these codes on this page": `lib/autoapply.js` finds the coupon box, its Apply button and the order total, types the codes in, and returns to the popup which codes changed the total. It makes no request, reads no cookies or storage, and sends nothing anywhere; `test/manifest.test.js` scans it for that. On a review site, "Save its rating to OpenVibe Reviews" runs `lib/rating.js`, which only reads: the page's name, its rating, the scale, how many ratings, and the city from its structured data. "Keep on my Rent board" and "Check the rent" run `lib/listing.js`, which only reads: the price and its currency, the city and region (never the street) and the bedrooms, from the structured data, else the page's price tag. Browser pages, files, IP addresses and local names are "not a site", and nothing is sent or offered for them. |
 | **Sent by the extension** | The Coupons part sends to `https://openvibe.coupons` only, and only the **hostname** (`lib/host.js` drops the path, query, fragment, port and credentials first): `GET /api/v1/merchants/resolve?host=`, the merchant id (`GET /api/v1/merchants/:id/coupons`), and, when you report, the code id plus `worked` or `failed` with an optional reason. Every request goes with `credentials: 'omit'` (no cookies), `referrerPolicy: 'no-referrer'` and `redirect: 'error'`. The Dock sends the person's own bearer to `https://openvibe.network` (its state, `/api/v1/me/dock`), `https://openvibe.chat` (Chats), and, when the Agents tab needs it, `https://openvibe.codes` (the agent view and its controls). |
 | **Hand-offs (only when you press the button)** | "Keep on my Rent board", "Check the rent", "Watch this page", "Compare delivery apps" and "Save its rating to OpenVibe Reviews" open **a new tab you see** on `https://openvibe.rent/board`, `https://openvibe.rent/fair`, `https://openvibe.watch/watches/new`, `https://openvibe.food/delivery` or `https://openvibe.reviews/save`, with the page's address and title (and, for Reviews, the rating read from it; for Rent, the price, city and bedrooms read from it) in that tab's address. `lib/handoff.js` removes the credentials, the fragment and tracking parameters (`utm_*`, `fbclid`, `gclid`, …) first. The extension makes no request for it, nothing opens on its own, and nothing is saved until you save it on that site. `platform.tabs.open()` refuses any other origin, and the permission audit allows only `https://openvibe.<tld>` hand-off origins. |
@@ -170,7 +170,7 @@ npm test
 
 | Requirement | Test |
 |---|---|
-| The manifest permission audit fails if anything widens: extra permissions, `<all_urls>` or broader hosts, content scripts, a background worker, web-accessible resources, `externally_connectable`, optional permissions, `unsafe-eval`, remote script or connect sources, any style source beyond `'unsafe-inline'`, any image beyond `'self' blob:`, any frame beyond Live, MV2. The first-party origins agree across config, host permissions and CSP. Pages have no inline or remote script. The code never uses cookies, scripting, dynamic code, HTML injection or `storage.sync`, and only `lib/api.js`, `lib/network-api.js`, `lib/auth.js` and the bundled Dock fetch. | `test/manifest.test.js` |
+| The manifest permission audit fails if anything widens: extra permissions, `<all_urls>` or broader hosts, content scripts, web-accessible resources, `externally_connectable`, optional permissions, `unsafe-eval`, remote script or connect sources, any style source beyond `'unsafe-inline'`, any image beyond `'self' blob:`, any frame beyond Live, MV2. The first-party origins agree across config, host permissions and CSP. Pages have no inline or remote script. The code never uses cookies, scripting, dynamic code, HTML injection or `storage.sync`, and only `lib/api.js`, `lib/network-api.js`, `lib/auth.js` and the bundled Dock fetch. | `test/manifest.test.js` |
 | The side panel in a real headless Chrome: the unpacked extension opens `panel.html` on the Agents tab with a stubbed Network/Chat/Codes, and the agent view draws its stream frame, line, meta and Pause/Resume, Curtain now, Mute/Unmute and End, with its styles applied and no CSP refusal. Skipped when no Chrome is installed. | `test/panel.test.js` (`scripts/check-panel.js`) |
 | API client against a stub: routes; no `Authorization` without a token; never cookies, referrers or redirects; errors as codes (revoked, scope, 429, 503); timeouts; refused input. | `test/api-client.test.js` |
 | The Coupons part never sends page content or URLs beyond the hostname. The popup controller runs on checkout URLs full of personal data, and every request the stub receives is inspected. Non-shop pages send nothing. Only `tabs.query` and `storage.local` are touched, and only `cpx_` tokens are stored there. | `test/privacy.test.js` |
@@ -255,3 +255,45 @@ shows "Allow access to openvibe.coupons".
 ---
 
 Part of the [OpenVibe network](https://openvibe.network). Built in the open by [OpenVibers](https://github.com/OpenVibers).
+
+## Locker passwords
+
+The popup unlocks Locker with its passphrase or recovery kit. A passkey belongs to
+openvibe.locker, so the popup explains this and offers **Open Locker**. Unlock keys
+live only in `storage.session` (or background memory where unavailable), never local
+or sync storage. Lock now, account changes, browser restart and 15 idle minutes
+clear them. Worker suspension does not reset the deadline.
+
+Saved logins match the current origin exactly, including scheme, hostname and port.
+**Fill** writes visible username/password inputs in the active tab's top frame;
+**Fill and sign in** also submits. Neither runs on page load. Ambiguous forms with
+more than one password input are refused. The injected function checks the origin
+again immediately before writing each input. Copy password/code clears the clipboard
+30 seconds after the latest copy, even when the popup closes; it does not read the
+clipboard and may clear something copied elsewhere during those 30 seconds.
+
+**Save this login** encrypts `{version:1,site,username,password,totp,notes}` using the
+same SDK envelope and private payload framing as Locker. Site and login details
+stay encrypted on the server. TOTP codes (including otpauth links) are computed
+locally. No password telemetry or breach lookup runs in Companion.
+
+Deployment requires Network's `locker.login.manage` scope and
+`GET /api/v1/me/keys/companion`, then Locker's `/api/v1/companion` routes. Existing
+OAuth grants need **Sign in to Companion** again to grant the new scope. The scope
+allows only own wrapped-key reads and own encrypted-login reads/creates, with live
+Network revocation checks. It grants no key-write, general-file or agent blind-fill
+capability. Chrome uses an offscreen clipboard document; Firefox uses its
+background event page with an alarm to clear even after suspension. Only the Locker host permission is added.
+
+Bundled crypto: `browser/shared/ov-locker-core.js` is the unchanged SDK 0.101.0
+browser bundle from Shared 4.156.0. `locker-payload.js` and `locker-passwords.js`
+come from Locker commit `9c2744e`; keep their framing/TOTP semantics compatible.
+Run `npm test -- locker`, `npm run pack:stores`, and `npm run lint:firefox`.
+
+Optional browser verification: install Playwright outside the package (or set
+`PLAYWRIGHT_MODULE` to an existing installation), install its Chromium build, and run
+`node test/locker-browser.js`. It checks trusted popup clicks, 12 responsive/theme
+screenshots and actual clipboard clearing with the packaged worker and no popup open.
+
+Firefox MV3 background pages are [non-persistent](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Background_scripts), so a clipboard alarm backs up its in-memory timer.
+Chrome uses the documented [offscreen clipboard context](https://developer.chrome.com/docs/extensions/reference/api/offscreen).

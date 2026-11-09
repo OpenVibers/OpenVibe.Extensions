@@ -37,16 +37,20 @@
     "activeTab",
     "identity",
     "scripting",
-    "storage"
+    "storage",
+    "alarms",
+    "clipboardWrite",
+    "offscreen"
   ],
   "host_permissions": [
     "https://openvibe.coupons/*",
     "https://openvibe.network/*",
     "https://openvibe.codes/*",
-    "https://openvibe.chat/*"
+    "https://openvibe.chat/*",
+    "https://openvibe.locker/*"
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src https://openvibe.coupons https://openvibe.network https://openvibe.chat https://openvibe.codes https://openvibe.email; frame-src https://openvibe.live; object-src 'none'; base-uri 'none'"
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src https://openvibe.coupons https://openvibe.network https://openvibe.chat https://openvibe.codes https://openvibe.email https://openvibe.locker; frame-src https://openvibe.live; object-src 'none'; base-uri 'none'"
   },
   "minimum_chrome_version": "114",
   "browser_specific_settings": {
