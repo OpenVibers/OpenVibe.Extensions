@@ -2,6 +2,9 @@
 
 > OpenVibe's first-party client surfaces: today, the **OpenVibe Companion** browser extension.
 
+**Docs:** https://openvibe.services · **For AI:** https://openvibe.network/llms.txt
+**Build and test:** `npm install && npm run pack` (Node 22 or newer) · **Tests:** `npm test`
+
 **Status:** alpha (roadmap Wave 18, client part). The extension builds, its tests pass, and headless
 Chrome loads the unpacked 0.9.0 build with no console or CSP errors (2026-11-07, Chrome 156 via
 CDP `Extensions.loadUnpacked`; the side panel's Agents tab draws the Dock's agent view against stubbed first parties, see the credential note below). A development build of
