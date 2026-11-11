@@ -49,7 +49,10 @@
         stream: 'Live', social: 'Social', chat: 'Chat', game: 'Games', economy: 'Money & deals',
         achievement: 'Achievements', service: 'Services', moderation: 'Moderation', system: 'System', admin: 'Announcements',
     };
-    const SERVICE_LABELS = { live: 'Live', tools: 'Tools', games: 'Games', media: 'Media', network: 'Network', host: 'Host', deals: 'Deals', coupons: 'Coupons', trade: 'Trade', chat: 'Chat' };
+    const SERVICE_LABELS = {
+        live: 'Live', tools: 'Tools', games: 'Games', media: 'Media', network: 'Network', host: 'Host', deals: 'Deals', coupons: 'Coupons', trade: 'Trade', chat: 'Chat',
+        actor: 'Agents', watch: 'Watch', connect: 'Connect', link: 'Link', community: 'Community', billing: 'Wallet', blog: 'Blog', design: 'Design', ai: 'AI', events: 'Events',
+    };
 
     // Line glyphs (24×24, stroked like the open-loop mark): one per kind of notice.
     const GLYPH = {
@@ -70,7 +73,12 @@
         bellSolid: '<path d="M5.8 16.2V11a6.2 6.2 0 0 1 12.4 0v5.2l1.7 2.3H4.1ZM9.9 19.6h4.2a2.1 2.1 0 0 1-4.2 0Z"/>',
         key: '<circle cx="8.2" cy="14.8" r="4"/><path d="M11.1 12l8.2-8.2M16.4 6.7l2.3 2.3M14.2 8.9l1.8 1.8"/>',
         spark: '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9-1.9 5.1-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.4 15.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/>',
+        agent: '<rect x="5" y="8.2" width="14" height="10.8" rx="3.6"/><path d="M12 8.2V5.4M9.4 13.4h.01M14.6 13.4h.01M3 12.6v2.6M21 12.6v2.6"/><circle cx="12" cy="4.4" r="1"/>',
+        eye: '<path d="M2.8 12s3.4-6.2 9.2-6.2 9.2 6.2 9.2 6.2-3.4 6.2-9.2 6.2S2.8 12 2.8 12z"/><circle cx="12" cy="12" r="2.8"/>',
+        screen: '<rect x="3.5" y="4.5" width="17" height="11.5" rx="2.2"/><path d="M9 20h6M12 16v4"/>',
     };
+    const SERVICE_GLYPH = { actor: 'agent', watch: 'eye', connect: 'screen', link: 'screen', billing: 'coin' };
+    const TYPE_GLYPH = { WELCOME: 'spark', AGENT_TASK_DONE: 'agent', AGENT_TASK_FAILED: 'agent', AGENT_NEEDS_YOU: 'agent' };
     const CATEGORY_GLYPH = { stream: 'live', social: 'people', chat: 'chat', game: 'game', economy: 'coin', achievement: 'trophy', moderation: 'shield', system: 'gear', service: 'grid', admin: 'bell' };
     const TONE = {
         live: 'var(--live-red, #e5484d)', danger: 'var(--live-red, #e5484d)', warn: 'var(--warning, #f5a524)', ok: 'var(--success, #30a46c)',
@@ -92,6 +100,7 @@
     let _pollTimer = null;
     let _lastSeenAt = null;       // newest created_at we have toasted / seen
     let _unreadCount = 0;
+    let _msgs = 0;   // new messages (navbar.js setMessages): on the bell's badge with the notifications, never in the list's own count
     let _toastContainer = null;
     let _panelEl = null;
     let _bellEl = null;
@@ -196,6 +205,7 @@
             .openvibe-notif-dock { display: flex; flex-direction: column; min-height: 0; flex: 1; color: var(--text-primary, #ececf1); }
             .openvibe-notif-dock .openvibe-nv-head { display: none; }
             .openvibe-notif-dock .openvibe-nv-tools { padding-top: 10px; }
+.openvibe-notif-dock.is-preview .openvibe-nv-tools, .openvibe-notif-dock.is-preview .openvibe-nv-foot, .openvibe-notif-dock.is-preview .openvibe-nv-head, .openvibe-notif-dock.is-preview .openvibe-nv-more { display: none; }
             .openvibe-notif-dock .openvibe-nv-foot { gap: 12px; }
             .openvibe-notif-dock .openvibe-nv-foot [data-role="status"] { margin-right: auto; }
             .ovn-foot-read { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--text-secondary, #b6b6c0); cursor: pointer; }
@@ -231,6 +241,7 @@
             .openvibe-nv-unread svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
             .openvibe-nv-tabs { display: flex; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 6px; }
             .openvibe-nv-tabs::-webkit-scrollbar { display: none; }
+            .openvibe-nv-tabs.is-more { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
             .openvibe-nv-tabs button { flex: none; position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; border: 0; background: transparent; color: var(--text-secondary, #b6b6c0); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
             .openvibe-nv-tabs button:hover, .openvibe-nv-tabs button[aria-selected="true"] { color: var(--text-primary, #ececf1); }
             .openvibe-nv-tabs button[aria-selected="true"]::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2.5px; border-radius: 2px 2px 0 0; background: var(--accent, #3b82f6); }
@@ -304,12 +315,7 @@
             }
             html.ovn-sheet-open, html.ovn-sheet-open body { overflow: hidden; }
             @media (max-height: 520px) { .openvibe-notif-item .msg { -webkit-line-clamp: 1; } }
-            @media (prefers-reduced-motion: reduce) {
-                .openvibe-toast, .ovn-phone .openvibe-toast, .openvibe-notif-panel { animation: none; }
-                .openvibe-toast.removing { animation: none; opacity: 0; }
-                .openvibe-bell.ringing svg, .openvibe-bell .badge { animation: none; }
-                .openvibe-toast-progress { display: none; }
-            }
+            html[data-ov-motion=off] .openvibe-toast.removing{opacity: 0}html[data-ov-motion=off] .openvibe-toast-progress{display: none}
         `;
         document.head.appendChild(style);
     }
@@ -407,17 +413,54 @@
             label: 'System', url: rich.runbook_url || urlOf(n), actionLabel: 'Open status',
         };
     }
+    // JSON in a message (a watch sends a feed entry, cut short): its title and summary, never code.
+    function readableMessage(raw) {
+        const s = String(raw || '').trim();
+        if (!/^[{[]\s*"/.test(s)) return s;
+        const field = (name) => {
+            const m = new RegExp(`"${name}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)`).exec(s);
+            if (!m) return '';
+            try { return JSON.parse(`"${m[1].replace(/\\$/, '')}"`); } catch { return m[1]; }
+        };
+        const title = field('title') || field('name');
+        const summary = field('summary') || field('description');
+        return [title, summary].filter(Boolean).join(' — ').replace(/\s+/g, ' ').trim();
+    }
+    const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+    // What kind of step it is, as a label (a noun, so it never reads as a button).
+    const ASK_CHIP = { approve: 'Approval', confirm: 'Approval', answer: 'Question', choose: 'Choice', pick: 'Choice', review: 'Review', 'sign in': 'Sign-in', 'log in': 'Sign-in' };
+    // An agent's notice: the task, not its wording ("Done: x" → x; "approve: step (task)" → step + chip).
+    function agentText(n, rich) {
+        const t = String(n.type || '');
+        let msg = String(n.message || '').trim();
+        const chips = [];
+        if (t === 'AGENT_TASK_DONE') msg = rich.task_title || msg.replace(/^Done:\s*/i, '');
+        else if (t === 'AGENT_TASK_FAILED') msg = rich.task_title ? `${rich.task_title}${rich.detail ? ` — ${rich.detail}` : ''}` : msg.replace(/^Not finished:\s*/i, '');
+        else if (t === 'AGENT_NEEDS_YOU') {
+            if (rich.step) msg = String(rich.step);
+            else if (/\)$/.test(msg) && msg.lastIndexOf(' (') > 0) msg = msg.slice(0, msg.lastIndexOf(' ('));
+            const m = /^(approve|answer|confirm|choose|pick|review|sign in|log in)\s*:\s*/i.exec(msg);
+            const k = (m ? m[1] : String(rich.kind || '')).toLowerCase();
+            if (m) msg = msg.slice(m[0].length);
+            if (ASK_CHIP[k]) chips.push(ASK_CHIP[k]);
+        }
+        return { message: cap(msg.trim()), chips };
+    }
     function present(n) {
         const rich = richOf(n);
         if (isOpsAlert(n, rich)) return presentOps(n, rich);
         const cat = n.category || 'system';
         const t = String(n.type || '');
-        const glyph = /DEAL|COUPON|PRICE|TRADE/.test(t) ? 'tag' : /CONFIRM|APPROV|SECUR|SIGN/.test(t) ? 'key' : (CATEGORY_GLYPH[cat] || 'bell');
-        const tone = n.priority === 'critical' ? 'danger' : (CATEGORY_TONE[cat] || 'accent');
-        const chips = Array.isArray(rich.chips) ? rich.chips.filter(c => typeof c === 'string').slice(0, 4) : [];
+        const agent = /^AGENT_/.test(t);
+        const glyph = /DEAL|COUPON|PRICE|TRADE/.test(t) ? 'tag' : /CONFIRM|APPROV|SECUR|SIGN/.test(t) ? 'key'
+            : (TYPE_GLYPH[t] || SERVICE_GLYPH[n.service] || CATEGORY_GLYPH[cat] || 'bell');
+        const tone = n.priority === 'critical' ? 'danger'
+            : t === 'AGENT_TASK_DONE' ? 'ok' : t === 'AGENT_TASK_FAILED' ? 'warn' : (CATEGORY_TONE[cat] || 'accent');
+        const said = agent ? agentText(n, rich) : { message: readableMessage(n.message), chips: [] };
+        const chips = said.chips.concat(Array.isArray(rich.chips) ? rich.chips.filter(c => typeof c === 'string') : []).slice(0, 4);
         return {
-            kind: 'plain', key: [t, n.title || '', n.service || '', cat].join('\u0001'), tone, glyph,
-            title: String(n.title || ''), message: String(n.message || ''), chips, severity: null, command: null,
+            kind: 'plain', key: [t, n.title || '', n.service || '', cat, rich.task_id || ''].join('\u0001'), tone, glyph,
+            title: String(n.title || ''), message: said.message, chips, severity: null, command: null,
             label: SERVICE_LABELS[n.service] || (n.service && n.service !== 'network' ? n.service : '') || CATEGORY_LABELS[cat] || '',
             url: urlOf(n), actionLabel: null,
         };
@@ -508,6 +551,9 @@
     function onSyncMessage(msg) {
         if (msg.type === 'unread') setBadge(msg.count, { quiet: true });
         else if (msg.type === 'read') { for (const v of _views.values()) applyReadLocally(v, msg.ids || [], msg.all); }
+    }
+    function announceCount() {
+        try { document.dispatchEvent(new CustomEvent('openvibe-notifications-count', { detail: { count: _unreadCount } })); } catch { /* */ }
     }
 
     // ── Sound ───────────────────────────────────────────────
@@ -784,33 +830,43 @@
     }
 
     // ── Bell / badge ────────────────────────────────────────
+    let _bellAction = null;
     function createBellEl() {
         const bell = document.createElement('div');
         bell.className = 'openvibe-bell';
         bell.setAttribute('role', 'button'); bell.setAttribute('aria-label', 'Notifications'); bell.tabIndex = 0;
         bell.innerHTML = `<svg class="ovnav-ovg has-s" viewBox="0 0 24 24" aria-hidden="true">${GLYPH.bell}<g class="ovg-s">${GLYPH.bellSolid}</g></svg><span class="badge hidden">0</span>`;
-        bell.addEventListener('click', () => togglePanel());
-        bell.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePanel(); } });
+        // With the Dock on the page, its Activity tab is this list: the bell opens it there (4.150.0, the owner: the bell
+        // "doesn't actually open the notifications … you have to open the chat button and click this manually"); the
+        // panel opened under the Dock's sheet, so the tap seemed to do nothing.
+        const press = () => { if (_bellAction) { try { if (_bellAction() === true) return; } catch { /* the panel then */ } } togglePanel(); };
+        bell.addEventListener('click', press);
+        bell.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); press(); } });
         _bellEl = bell;
         return bell;
+    }
+    // The bell's own number: notifications and new messages together, each named in its label.
+    function paintBell(ring) {
+        if (!_bellEl) return;
+        const badge = _bellEl.querySelector('.badge'), n = _unreadCount + _msgs;
+        if (n > 0) {
+            badge.textContent = n > 99 ? '99+' : String(n);
+            badge.classList.remove('hidden');
+            if (ring) { _bellEl.classList.add('ringing'); setTimeout(() => _bellEl.classList.remove('ringing'), 700); }
+        } else badge.classList.add('hidden');
+        const parts = [_unreadCount ? `${_unreadCount} unread` : '', _msgs ? `${_msgs} new ${_msgs === 1 ? 'message' : 'messages'}` : ''].filter(Boolean);
+        _bellEl.setAttribute('aria-label', parts.length ? `Notifications, ${parts.join(', ')}` : 'Notifications');
     }
     function setBadge(count, { quiet = false } = {}) {
         const prev = _unreadCount;
         _unreadCount = Math.max(0, Number(count) || 0);
-        if (_bellEl) {
-            const badge = _bellEl.querySelector('.badge');
-            if (_unreadCount > 0) {
-                badge.textContent = _unreadCount > 99 ? '99+' : String(_unreadCount);
-                badge.classList.remove('hidden');
-                if (!quiet && _unreadCount > prev) { _bellEl.classList.add('ringing'); setTimeout(() => _bellEl.classList.remove('ringing'), 700); }
-            } else badge.classList.add('hidden');
-            _bellEl.setAttribute('aria-label', _unreadCount ? `Notifications, ${_unreadCount} unread` : 'Notifications');
-        }
+        paintBell(!quiet && _unreadCount > prev);
         for (const v of _views.values()) {
             const c = v.root.querySelector('.openvibe-nv-head .count');
             if (c) { c.textContent = _unreadCount > 99 ? '99+' : String(_unreadCount); c.classList.toggle('zero', _unreadCount === 0); }
         }
         if (!quiet) broadcast({ type: 'unread', count: _unreadCount });
+        announceCount();
         if (_unreadCount !== prev && listShowing()) loadTabCounts();
     }
 
@@ -872,6 +928,14 @@
         };
         tabs.forEach((btn) => btn.addEventListener('click', () => selectTab(btn)));
         const tabRow = root.querySelector('.openvibe-nv-tabs');
+        // More filters past the edge: a fade says the row scrolls (4.150.0; "System" was cut off with no sign of more).
+        if (tabRow && !tabRow.__more) {
+            tabRow.__more = true;
+            const more = () => tabRow.classList.toggle('is-more', tabRow.scrollWidth - tabRow.clientWidth - tabRow.scrollLeft > 4);
+            tabRow.addEventListener('scroll', more, { passive: true });
+            if (typeof ResizeObserver === 'function') new ResizeObserver(more).observe(tabRow);
+            setTimeout(more, 0);
+        }
         const fade = () => { tabRow.classList.toggle('is-more', tabRow.scrollLeft + tabRow.clientWidth < tabRow.scrollWidth - 4); };
         tabRow.addEventListener('scroll', fade, { passive: true });
         v.fade = fade;
@@ -924,6 +988,7 @@
         }, true);
         attachRowSwipe(v, list);
         refreshPushButton(v);
+        v.destroy = () => { clearTimeout(qTimer); v.seq++; };
         _views.set(root, v);
         paintTabCounts();
         return v;
@@ -1038,7 +1103,7 @@
     }
 
     async function fetchPage(v, offset) {
-        const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
+        const params = new URLSearchParams({ limit: String(v.pageSize || PAGE_SIZE), offset: String(offset) });
         if (v.unread) params.set('unread_only', '1');
         if (v.tab && v.tab !== 'all') params.set('tab', v.tab);
         if (v.q) params.set('q', v.q);
@@ -1056,6 +1121,7 @@
             if (seq !== v.seq) return;
             v.items = data.notifications || []; v.items.forEach(n => v.ids.add(String(n.id)));
             v.hasMore = !!data.has_more; v.total = data.total ?? null; v.offset = v.items.length;
+            if (typeof v.onCount === 'function') { try { v.onCount(v.total); } catch { /* */ } }
             renderItems(v);
         } catch (e) {
             if (seq !== v.seq) return;
@@ -1190,6 +1256,8 @@
     }
     function stopPolling() { if (_pollTimer) clearInterval(_pollTimer); _pollTimer = null; }
 
+    // notification-live.js's content hash (scripts/sibling-revs.js writes it), so a release gives it a new URL.
+    const NOTIFY_REV = { 'notification-live.js': 'cd2d64cc77d0' };
     // ── Realtime (notification-live.js) ─────────────────────
     function liveOpen() { return !!(_live && _live.state().state === 'open'); }
     /** One re-read for a burst of events (a go-live fan-out, a replay after a reconnect); a gap re-reads open lists too. */
@@ -1207,7 +1275,7 @@
     function liveSrc() {
         if (_config.liveSrc) return _config.liveSrc;
         const m = /^(https?:\/\/[^?#]*\/)notification-ui\.js(?:[?#]|$)/.exec(SELF_SRC);
-        return `${m ? m[1] : 'https://openvibe.network/shared/'}notification-live.js`;
+        return `${m ? m[1] : 'https://openvibe.network/shared/'}notification-live.js${NOTIFY_REV['notification-live.js'] ? `?v=${NOTIFY_REV['notification-live.js']}` : ''}`;
     }
     let _liveLoading = null;
     function loadLive() {
@@ -1386,6 +1454,12 @@
             _toastContainer?.remove(); _panelEl?.remove();
             _toastContainer = null; if (_panelEl) _views.delete(_panelEl); _panelEl = null; _queue.length = 0;
         },
+        /** What a tap on the bell does instead of its own panel: fn() returns true when it handled it (navbar.js: the Dock). */
+        setBellAction(fn) { _bellAction = typeof fn === 'function' ? fn : null; },
+        /** New messages, counted on the bell with the notifications (navbar.js): 0 takes them off. */
+        setMessages(count) { const prev = _msgs; _msgs = Math.max(0, Number(count) || 0); paintBell(_msgs > prev); },
+        /** How many notifications are unread (not counting messages). */
+        unread() { return _unreadCount; },
         /** Create and inject the bell icon. Returns the DOM element. */
         createBell(container) {
             injectStyles();
@@ -1415,6 +1489,23 @@
             const v = buildView(container, { mode: 'dock' });
             reload(v);
             return v;
+        },
+        /** The You tab's preview (4.211.0): the newest three, no tools; Show all opens the whole list in place. */
+        renderMenuNotifications(container, onCount) {
+            injectStyles();
+            if (!container) return null;
+            container.classList.add('openvibe-notif-dock', 'is-preview');
+            const v = buildView(container, { mode: 'dock' });
+            v.pageSize = 3; v.onCount = onCount;
+            reload(v);
+            return { showAll() { container.classList.remove('is-preview'); v.pageSize = PAGE_SIZE; reload(v); } };
+        },
+        unmountDock(container) {
+            const v = _views.get(container);
+            if (!v || v.mode !== 'dock') return;
+            if (v.destroy) v.destroy();
+            _views.delete(container);
+            container.classList.remove('openvibe-notif-dock');
         },
         /** Programmatically show a toast (real-time events). Marks nothing on the server. */
         push(notification) {

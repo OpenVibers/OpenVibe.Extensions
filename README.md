@@ -6,7 +6,7 @@
 **Build and test:** `npm install && npm run pack` (Node 22 or newer) · **Tests:** `npm test`
 
 **Status:** alpha (roadmap Wave 18, client part). The extension builds, its tests pass, and headless
-Chrome loads the unpacked 0.9.0 build with no console or CSP errors (2026-11-07, Chrome 156 via
+Chrome loads the unpacked 0.9.2 build with no console or CSP errors (2026-11-07, Chrome 156 via
 CDP `Extensions.loadUnpacked`; the side panel's Agents tab draws the Dock's agent view against stubbed first parties, see the credential note below). A development build of
 the coupon part looked up codes and sent a report against a local OpenVibe.Coupons. Mozilla's
 `web-ext lint` (what addons.mozilla.org runs on upload) passes with no errors, warnings or notices
@@ -111,7 +111,7 @@ covered in Coupons' own tests: lookups are identical for every caller, and the A
 
 The **OpenVibe Dock** — the pill, the card with its Vibe, Agents, Chats and Activity tabs — sits in
 the browser's side panel (Chrome's `side_panel`, Firefox's `sidebar_action`), on every site. It is the
-released OpenVibe.Shared Dock 4.124.0, bundled under `browser/shared/` because the extension's CSP allows no
+released OpenVibe.Shared Dock 4.212.0, bundled under `browser/shared/` because the extension's CSP allows no
 remote script, and it reads and writes the same state on the Network as the Dock on a site, so it
 opens where the person left off. It hands that state to the Dock as it opens (the page's tab, chat, agent and
 unread counts) and re-reads it every 30 s, so a change on the page reaches the open side panel.
@@ -119,14 +119,15 @@ unread counts) and re-reads it every 30 s, so a change on the page reaches the o
 The Agents tab draws the person's own desk stream the same way a site's Dock does: the Live embed, the
 task line, and the owner's **Pause/Resume**, **Curtain now**, **Mute/Unmute** and **End** controls. The
 view is read with the person's token from OpenVibe.Codes (`GET /api/v1/me/agent-view`); the extension
-allows Codes and Live's embed for exactly that. Codes' normal session check does not yet accept the
-Dock's read-only OAuth token (issuer `<network>/dock`), so a production side panel keeps the view
-hidden until Codes or the Network accepts that credential; `scripts/check-panel.js` proves the bundled
-Dock itself draws it. Live's embed also allows first-party site origins, not an extension origin yet.
+allows Codes and Live's embed for exactly that. Codes accepts the Dock's read-only OAuth token (issuer
+`<network>/dock`), so the panel shows the stream; its four server controls are links to openvibe.codes,
+where the person's own session does the same thing. The fixed Chrome id is in Live's
+`AGENT_EMBED_EXTENSION_ORIGINS`, and a browser that cannot frame the embed gets the still and a
+**Watch on openvibe.live** link instead. `scripts/check-panel.js` proves both in headless Chrome.
 
 It needs the person's own OpenVibe sign-in. Press **Sign in** in the panel or the settings page: the
 Network's account chooser opens, the extension is a public OAuth client (`companion`, PKCE S256, no
-secret), and the Dock gets a read-only token (`dock`, `activity`, `chat.read`) that refreshes itself.
+secret), and the Dock gets a read-only token (`dock`, `activity`, `chat.read`, `agent.view`) that refreshes itself.
 The access token is kept in `storage.session`; the rotating refresh token in `storage.local`, on this
 device. Sign out revokes it at the Network, and the account page (`/my`) lists it under **Signed-in
 apps**. The 0.7.0 pasted-token path is still in the settings page as a fallback until a later release
@@ -139,9 +140,10 @@ browser/
   manifest.json          MV3; Chromium (minimum_chrome_version 114) and Firefox (gecko id, strict_min_version 128)
   panel.html / panel.js  the Dock in the side panel: the Network's state, the same tabs as the Dock on a site
   panel.css             the Dock fills the panel (no floating card, no pill)
-  shared/               the released OpenVibe.Shared Dock 4.124.0, bundled: the CSP allows no remote script
-                        (dock.js, dock-vibe.js, dock-agent.js, dock-timer.js, action-center.js,
-                        notification-ui.js, notification-live.js, ov-mark.js, kit.css)
+  shared/               the released OpenVibe.Shared Dock 4.212.0, bundled: the CSP allows no remote script
+                        (dock.js, dock-*.js, action-center.js, notification-*.js, agent-sheet.js,
+                        agent-session.js, ov-window.js, ov-float.js, ov-composer.js, ov-glyphs.js,
+                        brands.js, theme-loader.js, ov-mark.js, kit.css)
   popup.html / popup.js  DOM wiring only
   options.html / .js     connect (save a checked token), disconnect, grant the API host permission
   lib/config.js          API_ORIGIN (Coupons), NETWORK_ORIGIN and CHAT_ORIGIN (the Dock), CODES_ORIGIN (its agent view); HANDOFF_ORIGINS (Rent, Watch, Food, Reviews)

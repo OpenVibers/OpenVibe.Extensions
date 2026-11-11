@@ -4,7 +4,7 @@
  * The side panel in a real browser: headless Chrome (CDP over Node's own WebSocket, no dependencies) loads the
  * unpacked extension, opens panel.html with a stubbed Network/Chat/Codes and a live agent view, and checks what a
  * person would see: the Dock on its Agents tab, the agent's stream frame, the line and the meta, the four controls
- * (Pause/Resume, Curtain now, Mute/Unmute, End), and the Dock's own styles and nothing a CSP refused.
+ * (Pause/Resume, Curtain now, Mute/Unmute, End, and the local Float), and the Dock's own styles and nothing a CSP refused.
  *
  *   node scripts/check-panel.js            (CHROME=/path/to/chrome to choose the browser; OV_EXT_DIR=an unpacked build, default browser/)
  *
@@ -189,7 +189,7 @@ async function main() {
                     watch: (() => { const w = q('a.ovda-watch'); return w ? { hidden: w.hidden, text: w.textContent.trim() } : null; })(),
                     frame: (q('iframe.ovda-frame') || {}).src || null,
                     tab: text(q('[role="tab"][aria-selected="true"]')),
-                    styles: !!document.getElementById('ovdk-styles') && !!document.getElementById('ovda-styles') && !!document.getElementById('ovac-styles'),
+                    styles: !!document.getElementById('ovdk-styles') && !!document.getElementById('ovda-styles'),
                     lineDisplay: q('.ovda-line') ? getComputedStyle(q('.ovda-line')).display : null,
                 };
             })()`);
@@ -229,12 +229,12 @@ async function main() {
         if (seen && seen.line !== 'Ship the Dock') failures.push(`the agent's line is "${seen.line}"`);
         if (seen && !/Paused by @ada/.test(seen.meta || '')) failures.push(`the meta does not say who paused it: "${seen.meta}"`);
         if (seen && !/2 watching/.test(seen.meta || '')) failures.push(`the meta does not say how many watch: "${seen.meta}"`);
-        const wantActs = ['pause:Resume', 'curtain:Curtain now', 'mute:Unmute', 'end:End'];
-        if (seen && JSON.stringify(seen.acts) !== JSON.stringify(wantActs)) failures.push(`the four controls are ${JSON.stringify(seen.acts)}`);
-        if (seen && seen.actLinks.length !== 4) failures.push(`the read-only controls are not links: ${JSON.stringify(seen.actLinks)}`);
+        const wantActs = ['pause:Resume', 'curtain:Curtain now', 'mute:Unmute', 'end:End', 'float:Float'];
+        if (seen && JSON.stringify(seen.acts) !== JSON.stringify(wantActs)) failures.push(`the controls are ${JSON.stringify(seen.acts)}`);
+        if (seen && seen.actLinks.length !== 4) failures.push(`the four server controls are not read-only links: ${JSON.stringify(seen.actLinks)}`);
         if (seen && seen.actLinks.some((href) => href !== 'https://openvibe.codes')) failures.push(`a control does not open Codes: ${JSON.stringify(seen.actLinks)}`);
         if (seen && seen.frame !== AGENT.embed_url) failures.push(`the stream frame is "${seen.frame}"`);
-        if (seen && !seen.styles) failures.push("the Dock's own styles are missing");
+        if (seen && !seen.styles) failures.push("the Dock's and agent view's own styles are missing");
         if (seen && seen.lineDisplay !== 'flex') failures.push(`the agent's styles did not apply (line display ${seen.lineDisplay})`);
         if (security.length) failures.push(`CSP refused: ${security.join(' | ')}`);
         if (!paused.some((u) => u.startsWith('https://openvibe.live/embed/agent/'))) failures.push('the panel never asked for the agent embed');
