@@ -36,7 +36,6 @@
 .ovdk-tmenu .go { background: var(--accent, #3b82f6); border-color: transparent; color: var(--on-accent, #fff); }
 .ovdk-pill[data-tone="timer"] .ovdk-t { font-variant-numeric: tabular-nums; }
 .ovdk-pill[data-tone="timer-done"] { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #3b82f6) 45%, transparent); }
-@media (prefers-reduced-motion: reduce) { .ovdk-timer-bar i { transition: none; } }
 `;
     const pad = (n) => String(n).padStart(2, '0');
     const left = (ms) => {

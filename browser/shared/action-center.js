@@ -158,7 +158,6 @@
             .ovac-group { display: flex; align-items: center; gap: 8px; margin: 10px 10px 4px; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--text-muted, #8b8b96); }
             .ovac-group span { font-variant-numeric: tabular-nums; letter-spacing: 0; color: var(--text-secondary, #b6b6c0); }
             .ovac-group[data-bucket="waiting"] { color: color-mix(in srgb, var(--warning, #f5a524) 70%, var(--text-primary, #ececf1)); }
-            @media (prefers-reduced-motion: reduce) { .ovac { animation: none; } .ovac-item[data-bucket="running"] .ovac-state::before { animation: none; } }
         `;
         document.head.appendChild(st);
     }

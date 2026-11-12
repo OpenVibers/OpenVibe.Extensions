@@ -26,7 +26,11 @@
  *   - a page on its way (navbar): the ring empties and draws itself round again as the next page loads, paced by how
  *     long this site's pages usually take in this browser (learned per site, boost moves and full loads apart); the
  *     V nods while it waits and hops when the page is here (window.OVMark.navStart/navEnd for single-page apps);
- *   - busy: the V bobs and the O breathes, in turn; ok: the V becomes a tick, green, and hops (the tick only ever
+ *   - busy (working): the O breaks into eight dots and three bright ones go round it, dot to dot, while the V bobs
+ *     (the owner, 2026-11-10: "make the O turn into a bunch of little circles… a spinner that has little dots around
+ *     it… that actually looks like it's loading"); think (your agent is thinking or writing): three dots rise in turn
+ *     inside the O and the V's two strokes glimmer one after the other, the one sign used wherever tokens are on
+ *     their way; ok: the V becomes a tick, green, and hops (the tick only ever
  *     means "done"); error: the V becomes "!", red, and the mark shakes; no: the V becomes "×", grey, and the O
  *     shakes its head; notify: a dot pops up by the V and the O bounces; live: the O is the record light, red, and
  *     ripples go out from it; sleep: the O closes like an eye and the V sinks.
@@ -36,19 +40,25 @@
  * visit, from the first time a mark is on screen in this tab; later pages of a multi-page site open with the mark at
  * rest), while it or its link is hovered or focused (and LINGER_MS after), and while it shows a state, a page load or
  * progress. Otherwise its CSS animations are paused where they are. It never moves while the page is hidden, while it
- * is off-screen (IntersectionObserver), with data-static, under prefers-reduced-motion or under the network's own
- * reduced-motion setting (html[data-ov-motion=reduced], theme-loader.js); its colours and shapes still change.
+ * is off-screen (IntersectionObserver), with data-static, or with motion off (html[data-ov-motion=off],
+ * theme-loader.js); its colours and shapes still change. Calm (html[data-ov-motion=reduced]: the person's choice, or
+ * the device asking for less motion) keeps the intro, the hover and every state, drops the linger after a hover and
+ * lets fewer leaves fall a shorter way.
  *
  * The season (theme-loader.js sets <html data-ov-season-mark="halloween|winter"> for anyone who has not turned seasonal
  * themes off, on any theme): the mark wears it, the O a pumpkin with its stem and leaf in October, caps of snow in
  * December. Now and then (every 4 to 8 minutes) a mark on screen flickers for a moment, and on the first visit of the
- * day a few leaves (snowflakes in December) drift down from the first mark seen. Never under either reduced-motion setting.
+ * day a few leaves (snowflakes in December) drift down from the first mark seen: seven in full, three under Calm, none
+ * with motion off.
  */
 (function () {
     'use strict';
     if (window.__ovMark) return; window.__ovMark = true;
     let n = 0;
     const f = (v) => +v.toFixed(2);
+    // The ground around the V where it crosses the O: the wide gap (the owner's pick, 2026-11-10, the Arena's P07:
+    // "more ground around the V where it crosses"); it was 7.
+    const HALO = 14;
     // The Pair in a 100-unit box, centred on (50, 50) (openvibe-shared/mark: the same numbers; test/mark.test.js).
     function pair(r, sw, vsw, a = 0.86, t = 1.5, b = 2.16) {
         const R = r + sw / 2, right = b * R + vsw / 2, cx = 50 - (right - R) / 2, cy = 50;
@@ -66,7 +76,7 @@
             err: [mx, A[1], mx, T[1] - vsw * 1.28, mx, T[1], mx, T[1] + 0.01],
         };
         for (const k in shapes) shapes[k] = shapes[k].map(f);
-        return { cx: f(cx), cy, r, sw, R: f(R), vsw, halo: vsw + 7, A, T, B, ring, box, wideBox, shapes };
+        return { cx: f(cx), cy, r, sw, R: f(R), vsw, halo: vsw + HALO, A, T, B, ring, box, wideBox, shapes };
     }
     const FORMS = { pair: pair(20, 13, 13), heavy: pair(18, 18, 17) };
     const formOf = (v) => (v === 'heavy' || v === 'solid' ? 'heavy' : 'pair');
@@ -131,7 +141,19 @@ html[data-ov-season-mark] .ov-mark[data-ovm-intro] .sl{animation:ovmLeaf .9s cub
 .ov-mark[data-ovm-arrive] .og{animation:ovmPulse .5s ease-out 1}
 /* The states. */
 .ov-mark[data-state=busy] .vg{animation:ovmBob .9s ease-in-out infinite}
-.ov-mark[data-state=busy] .og{animation:ovmBreathe .9s ease-in-out .45s infinite}
+/* Working: the O as eight dots (a dash of no length with a round cap is a dot), three bright ones hopping round. */
+.ov-mark[data-state=busy] :is(.o,.ot){stroke-linecap:round;stroke-width:var(--ovm-dot-w)}
+.ov-mark[data-state=busy] .ot{opacity:.3;stroke-dasharray:0 12.5}
+.ov-mark[data-state=busy] .o{stroke-dasharray:0 12.5 0 12.5 0 75;animation:ovmDots .96s steps(8,end) infinite}
+.ov-mark[data-state=busy] .og{animation:ovmSettle .4s cubic-bezier(.2,1.3,.3,1) 1}
+/* Thinking: three dots inside the O rise in turn, the ring quiets, the V's strokes glimmer one after the other. */
+.ov-mark .td{display:none;fill:var(--ovm-o);transform-box:fill-box;transform-origin:center}
+.ov-mark[data-state=think] .td{display:inline;animation:ovmThink 1.2s ease-in-out infinite}
+.ov-mark[data-state=think] .td2{animation-delay:.16s}
+.ov-mark[data-state=think] .td3{animation-delay:.32s}
+.ov-mark[data-state=think] .o{stroke-opacity:.5;transition:stroke-opacity .3s}
+.ov-mark[data-state=think] .va{animation:ovmSpeak 1.2s ease-in-out infinite}
+.ov-mark[data-state=think] .vb{animation:ovmSpeak 1.2s ease-in-out .6s infinite}
 .ov-mark[data-state=ok]{--ovm-o:var(--success,#22c55e);--ovm-v:var(--success,#22c55e)}
 .ov-mark[data-state=ok] .vg{animation:ovmHop .56s ease-out .14s 1 both}
 .ov-mark[data-state=error]{--ovm-o:var(--danger,#ef4444);--ovm-v:var(--danger,#ef4444)}
@@ -168,6 +190,10 @@ html[data-ov-season-mark] .ov-mark[data-ovm-intro] .sl{animation:ovmLeaf .9s cub
 @keyframes ovmHop{0%,100%{transform:translateY(0) scaleY(1)}35%{transform:translateY(-9px) scaleY(1.04)}70%{transform:translateY(0) scaleY(.96)}}
 @keyframes ovmBob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
 @keyframes ovmBreathe{0%,100%{transform:scale(1)}50%{transform:scale(.88)}}
+@keyframes ovmDots{to{stroke-dashoffset:-100}}
+@keyframes ovmSettle{from{transform:scale(.86)}}
+@keyframes ovmThink{0%,55%,100%{transform:translateY(0);opacity:.4}28%{transform:translateY(-2.6px);opacity:1}}
+@keyframes ovmSpeak{0%,100%{opacity:1}50%{opacity:.5}}
 @keyframes ovmPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 @keyframes ovmShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-7px)}30%{transform:translateX(7px)}45%{transform:translateX(-6px)}60%{transform:translateX(6px)}80%{transform:translateX(-3px)}}
 @keyframes ovmNo{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
@@ -186,8 +212,7 @@ html[data-ov-season-mark=winter] .ovm-fall i{width:6px;height:6px;border-radius:
 @keyframes ovmWiggle{0%,100%{transform:none}25%{transform:rotate(-18deg)}60%{transform:rotate(12deg)}}
 @keyframes ovmTwinkle{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes ovmFall{0%{opacity:0;transform:none}12%{opacity:1}72%{opacity:1;transform:translate(var(--x),var(--y)) rotate(var(--r))}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r))}}
-@media (prefers-reduced-motion:reduce){.ov-mark *{animation:none!important}.ov-mark,.ov-mark *,.ov-mark::before{transition:none!important}.ovm-fall{display:none}}
-html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
+html[data-ov-motion=off] .ov-mark:not([data-fx-demo] *) *{animation-iteration-count:1!important}html[data-ov-motion=off] .ovm-fall{display:none}
 .ov-busy{cursor:progress;pointer-events:none}
 .ov-busy-mark{display:inline-block;vertical-align:-.2em;margin-right:.45em;flex:none}
 `;
@@ -206,7 +231,7 @@ html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
 <linearGradient id="${id}gg"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <mask id="${id}s" maskUnits="userSpaceOnUse" x="-20" y="-20" width="140" height="140"><g mask="url(#${id}h)"><g class="og" style="${oc}"><path d="${G.ring}" fill="none" stroke="#fff" stroke-width="${G.sw}"/></g></g><g class="vg" style="${vc}"><path class="ma" d="${seg(p, 0)}" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="${G.vsw}"/><path class="mb" d="${seg(p, 4)}" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="${G.vsw}"/></g></mask></defs>
 <g class="m"><circle class="rp" cx="${G.cx}" cy="${G.cy}" r="${G.R}"/><circle class="rp rp2" cx="${G.cx}" cy="${G.cy}" r="${G.R}"/>
-<g mask="url(#${id}h)"><g class="og" style="${oc}"><path class="ot" d="${G.ring}" stroke-width="${G.sw}"/><path class="o" d="${G.ring}" pathLength="100" stroke-width="${G.sw}" style="stroke:url(#${id}go)"/><circle class="cd" cx="${G.cx}" cy="${G.cy}" r="${f(ri * 0.62)}"/>
+<g mask="url(#${id}h)"><g class="og" style="${oc};--ovm-dot-w:${f(G.sw * 0.62)}"><path class="ot" d="${G.ring}" pathLength="100" stroke-width="${G.sw}"/><path class="o" d="${G.ring}" pathLength="100" stroke-width="${G.sw}" style="stroke:url(#${id}go)"/><circle class="cd" cx="${G.cx}" cy="${G.cy}" r="${f(ri * 0.62)}"/>${[-1, 0, 1].map((k, n) => `<circle class="td${n ? ` td${n + 1}` : ''}" cx="${f(G.cx + k * ri * 0.52)}" cy="${G.cy}" r="${f(ri * 0.21)}"/>`).join('')}
 <g class="sw2"><path class="sc" d="M${c0[0]} ${c0[1]}A${capR} ${capR} 0 0 1 ${c1[0]} ${c1[1]}"/></g></g></g>
 <g class="vg" style="${vc}"><path class="va" d="${seg(p, 0)}" stroke-width="${G.vsw}" style="stroke:url(#${id}gv)"/><path class="vb" d="${seg(p, 4)}" stroke-width="${G.vsw}" style="stroke:url(#${id}gv)"/>
 <g class="sw2"><circle class="sd" cx="${G.A[0]}" cy="${f(G.A[1] - G.vsw * 0.18)}" r="${f(G.vsw * 0.36)}"/><circle class="sd" cx="${G.B[0]}" cy="${f(G.B[1] - G.vsw * 0.18)}" r="${f(G.vsw * 0.36)}"/></g></g>
@@ -251,21 +276,29 @@ html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
         if (!end || end > now + INTRO_MS) { end = now + INTRO_MS; try { sessionStorage.setItem(INTRO_KEY, String(end)); } catch { /* */ } }
         return end;
     }
-    function reduced() {
-        return !!(rm && rm.matches) || document.documentElement.getAttribute('data-ov-motion') === 'reduced';
+    // Inside [data-fx-demo] (ov-fx.js: a motion page's own container, set when the person asks) a mark plays in full.
+    // 'full' | 'calm' | 'off': <html data-ov-motion> is the signal (theme-loader.js, the device's setting counted in);
+    // a page without the loader asks the device.
+    function motion(el) {
+        if (el && el.closest && el.closest('[data-fx-demo]')) return 'full';
+        const m = document.documentElement.getAttribute('data-ov-motion');
+        if (m === 'off') return 'off';
+        return m === 'reduced' || (!m && rm && rm.matches) ? 'calm' : 'full';
     }
+    const off = (el) => motion(el) === 'off';
     function update(el) {
         const st = state.get(el); if (!st) return;
         const svgEl = el.querySelector('svg');
         if (!el.isConnected || !svgEl) { forget(el); return; }
         const now = Date.now();
-        const may = !reduced() && !el.hasAttribute('data-static') && !document.hidden && st.onScreen === true;
-        if (may && !st.introEnd) { st.introEnd = introDeadline(now); if (season()) setTimeout(() => fallOnce(el), 900); }
+        const may = !el.hasAttribute('data-static') && !document.hidden && st.onScreen === true;
+        if (may && !off(el) && !st.introEnd) { st.introEnd = introDeadline(now); if (season()) setTimeout(() => fallOnce(el), 900); }
         const s = el.getAttribute('data-state');
         // Anything the mark is showing keeps it moving: a state, a page on its way, a known progress.
         const showing = (s && s !== 'idle') || el.hasAttribute('data-nav') || el.hasAttribute('data-progress');
         const intro = now < st.introEnd;
-        const run = may && (intro || st.hover || st.focus || now < st.lingerEnd || showing);
+        // Calm plays the intro and answers a hover or focus, and rests as soon as that ends (no linger).
+        const run = may && (showing || (!off(el) && (intro || st.hover || st.focus || (motion(el) === 'full' && now < st.lingerEnd))));
         if (run !== el.hasAttribute('data-ovm-run')) { if (run) el.setAttribute('data-ovm-run', ''); else el.removeAttribute('data-ovm-run'); }
         // The intro's pop and growth are on only inside the intro (paused with the rest while the mark cannot move).
         if ((may && intro) !== el.hasAttribute('data-ovm-intro') && (may || !intro)) { if (may && intro) el.setAttribute('data-ovm-intro', ''); else el.removeAttribute('data-ovm-intro'); }
@@ -292,7 +325,7 @@ html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
         clearTimeout(flourishTimer); flourishTimer = 0;
         if (!season()) return;
         flourishTimer = setTimeout(() => {
-            if (season() && !reduced() && !document.hidden) {
+            if (season() && !off() && !document.hidden) {
                 document.querySelectorAll('.ov-mark[data-ov]:not([data-static])').forEach((el) => {
                     const st = state.get(el); if (!st || st.onScreen === false) return;
                     el.setAttribute('data-ovm-flourish', ''); setTimeout(() => el.removeAttribute('data-ovm-flourish'), 1700);
@@ -303,7 +336,8 @@ html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
     }
     const FALL_KEY = 'ov-season-fall';
     function fallOnce(el) {
-        const id = season(); if (!id || reduced() || document.hidden || !el.isConnected) return;
+        const id = season(); if (!id || off() || document.hidden || !el.isConnected) return;
+        const calm = motion() === 'calm';
         const day = id + ':' + new Date().toDateString();
         try { const ls = window.localStorage; if (ls.getItem(FALL_KEY) === day) return; ls.setItem(FALL_KEY, day); } catch { return; }
         const r = el.getBoundingClientRect(); if (!r.width || !document.body) return;
@@ -316,11 +350,11 @@ html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
         const rb = bar && bar.getBoundingClientRect();
         const floor = rb && rb.bottom > y0 + 8 ? rb.bottom - y0 - 4 : 0;
         const colors = id === 'winter' ? ['#f4fbff', '#d8f3ff', '#ffffff'] : ['#ff7a1a', '#f5a524', '#d9481f', '#7fd04e'];
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < (calm ? 3 : 7); i++) {
             const s = document.createElement('i');
-            const dx = Math.max(8 - x0, Math.min((window.innerWidth || 0) - 8 - x0, Math.round((Math.random() - 0.3) * 200)));
+            const dx = Math.max(8 - x0, Math.min((window.innerWidth || 0) - 8 - x0, Math.round((Math.random() - 0.3) * (calm ? 70 : 200))));
             const dy = floor ? Math.round(floor - Math.random() * 3) : Math.round(36 + Math.random() * 28);
-            s.style.cssText = `--x:${dx}px;--y:${dy}px;--r:${Math.round(Math.random() * 540 - 270)}deg;animation-delay:${(i * 0.18 + Math.random() * 0.2).toFixed(2)}s;animation-duration:${(2.4 + Math.random() * 1.2).toFixed(2)}s;background:${colors[i % colors.length]}`;
+            s.style.cssText = `--x:${dx}px;--y:${dy}px;--r:${Math.round((Math.random() * 540 - 270) * (calm ? 0.35 : 1))}deg;animation-delay:${(i * 0.18 + Math.random() * 0.2).toFixed(2)}s;animation-duration:${(2.4 + Math.random() * 1.2).toFixed(2)}s;background:${colors[i % colors.length]}`;
             box.appendChild(s);
         }
         document.body.appendChild(box);
@@ -380,7 +414,7 @@ html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
             new MutationObserver((records) => {
                 let added = false;
                 for (const r of records) {
-                    if (r.type === 'attributes') { if (r.target === document.documentElement) { updateAll(); if (r.attributeName === 'data-ov-season-mark') scheduleFlourish(); } else if (state.has(r.target)) update(r.target); continue; }
+                    if (r.type === 'attributes') { if (r.attributeName === 'data-fx-demo') { updateAll(); continue; } if (r.target === document.documentElement) { updateAll(); if (r.attributeName === 'data-ov-season-mark') scheduleFlourish(); } else if (state.has(r.target)) update(r.target); continue; }
                     if (r.addedNodes.length) added = true;
                     r.removedNodes.forEach((node) => {
                         if (node.nodeType !== 1) return;
@@ -389,7 +423,7 @@ html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
                     });
                 }
                 if (added) mount();
-            }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-state', 'data-static', 'data-nav', 'data-progress', 'data-ov-motion', 'data-ov-season-mark'] });
+            }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-state', 'data-static', 'data-nav', 'data-progress', 'data-ov-motion', 'data-ov-season-mark', 'data-fx-demo'] });
         } catch { /* */ }
     }
     // ── A page on its way: the navbar's mark draws its ring round as the next page loads ──
@@ -457,9 +491,12 @@ html[data-ov-motion=reduced] .ov-mark *{animation:none!important}
         window.addEventListener('pageshow', (e) => { if (e.persisted) { navStop(); clearNav(); } });
         // This page came from a click on the last one: learn how long it took, and finish the ring here.
         let t = 0; try { t = Number(sessionStorage.getItem(NAV_FLAG)) || 0; sessionStorage.removeItem(NAV_FLAG); } catch { /* */ }
+        // soft.js ends the ring itself at the arriving page's first paint (it starts at the press, not the click); the
+        // pace is still learned here, from the click's marker, before soft.js's ending takes over.
         if (t && Date.now() - t < 20000) {
             learn('page', Date.now() - t);
-            const finish = () => { const marks = navMarks(); if (!marks.length) return false; setFill(marks, 0.9); setTimeout(() => navEnd(null), 60); return true; };
+            if (window.__ovSoftNavEnded) return;
+            const finish = () => { if (window.__ovSoftNavEnded) return true; const marks = navMarks(); if (!marks.length) return false; setFill(marks, 0.9); setTimeout(() => navEnd(null), 60); return true; };
             let tries = 0; const again = () => { if (!finish() && ++tries <= 20) setTimeout(again, 100); }; again();
         }
     }

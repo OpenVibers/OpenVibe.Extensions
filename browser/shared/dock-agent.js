@@ -1,19 +1,22 @@
 // ═══════════════════════════════════════════════════════════════
-// OpenVibe — the Dock's agent view (Dock plan 2026-10-30, K-D3; Agent Streams S1), Shared 4.120.0
+// OpenVibe — the Dock's agent view (Dock plan 2026-10-30, K-D3; Agent Streams S1), Shared 4.120.0; Float 4.154.0
 //
 // The person's own agent desk stream at the top of the Dock's Agents tab. dock.js loads this file the first time that
 // tab opens:
 //   OpenVibeDockAgent.mount(container, { token, base, active })  → { refresh(), destroy() }
 //
-// `base` is OpenVibe.Codes' API (GET /api/v1/me/agent-view, the same POST for pause, Curtain now, mute and End, and
-// the frame). Agent Streams S5 adds the four controls: a moderator cannot resume the owner's pause on Live, and the
+// The read is OpenVibe.Codes' GET /api/v1/me/agent-view (the same POST for pause, Curtain now, mute and End, and the
+// frame). It asks Network's same-origin relay (/api/frame/agent-view…) because every site's connect-src allows
+// openvibe.network and refuses openvibe.codes; `frameBase` overrides the relay, and `base` reaches Codes itself in a
+// test or the extension (an explicit base wins). Nothing is asked when there is no token: a signed-out page can never
+// read the view. Agent Streams S5 adds the four controls: a moderator cannot resume the owner's pause on Live, and the
 // Dock is the owner's own view, so it may always resume.
 // Codes mints the view ticket server-side with the person's own token — an iframe on another site has no Live cookie —
 // so the frame it answers is already Live's /embed/agent/<ags_id>?vt=wvt_…: the picture, the "AI agent" label, the
 // curtain state and the viewer count. The embed renews its own ticket while it plays.
 //
 // Nothing live: the last frame through the same API (an <img> cannot carry a token), with the task and the worked time.
-// There is no step line yet: steps are Agent Streams S2, and this view shows none until Live serves them.
+// Live's S2 current step comes through Codes when available; an older stream simply has no step line.
 // Everything is set as text, never markup; the frame's address is the one Codes answered, as an https Live address.
 // ═══════════════════════════════════════════════════════════════
 (function (root) {
@@ -55,6 +58,7 @@
         sound: '<path d="M4 9.5h4L13 5v14l-5-4.5H4z"/><path d="M17 9.5a4 4 0 0 1 0 5"/>',
         stop: '<rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/>',
         open: '<path d="M14 4h6v6M20 4l-9 9M19 14v5a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 19V7a1.5 1.5 0 0 1 1.5-1.5H10"/>',
+        float: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><rect x="11.5" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/>',
     };
 
     // The style goes into the document the view lives in: the page, or the Dock's own window when it is popped out.
@@ -69,6 +73,7 @@
             .ovda-stage { position: relative; overflow: hidden; aspect-ratio: 16 / 9; border-radius: 14px; background: #0a0c11; border: 1px solid var(--border, rgba(255,255,255,.1)); }
             .ovda-frame, .ovda-still { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: contain; background: #0a0c11; }
             .ovda-still { object-fit: cover; opacity: .92; }
+            .ovda-stage[hidden] { display: none; }
             .ovda-wait { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-muted, #8b8b96); font-size: 12.5px; text-align: center; padding: 12px; }
             .ovda-line { display: flex; align-items: center; gap: 6px; min-height: 34px; font-size: 12.5px; color: var(--text-secondary, #b6b6c0); }
             .ovda-line b { color: var(--text-primary, #ececf1); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -87,9 +92,14 @@
             .ovda-acts button:disabled { opacity: .5; cursor: default; }
             .ovda-acts svg { width: 14px; height: 14px; }
             .ovda-acts button[data-act="end"] { color: color-mix(in srgb, var(--live-red, #e5484d) 65%, var(--text-primary, #ececf1)); }
+            /* A session that ended is two lines of words with its one way out beside them, not a button on a row of its own. */
+            .ovda.is-ended .ovda-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; align-items: center; padding: 2px 4px 6px; }
+            .ovda.is-ended .ovda-line, .ovda.is-ended .ovda-meta { grid-column: 1; }
+            .ovda.is-ended .ovda-acts { grid-column: 2; grid-row: 1 / span 2; margin: 0; }
+            .ovda.is-ended .ovda-acts:empty { display: none; }
+            @media (pointer: coarse) { .ovda-acts button, .ovda-acts a { min-height: 44px; min-width: 44px; justify-content: center; } }
             .ovda svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
             @keyframes ovda-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-            @media (prefers-reduced-motion: reduce) { .ovda-line .dot.live { animation: none; } }
         `;
         (d.head || d.documentElement).appendChild(st);
     }
@@ -105,30 +115,35 @@
         const o = { ...opts };
         const h = (tag, cls, text) => { const n = d.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
         const codesBase = String(o.base || CODES).replace(/\/+$/, '');
+        // Network's frame relay on a site; an explicit base reaches Codes itself (a test, or the extension's panel).
+        const direct = o.base ? String(o.base).replace(/\/+$/, '') : '';
+        const frameBase = String(o.frameBase || 'https://openvibe.network/api/frame').replace(/\/+$/, '');
+        const endpoint = (path) => (direct ? direct + path : frameBase + path.replace(/^\/api\/v1\/me\/agent-view/, '/agent-view'));
         let gone = false, timer = 0, busy = false, agent = null, frameUrl = null, lastFrame = '';
         let readOnly = false, framedFor = '', frameRefused = '', frameTimer = 0;
         container.innerHTML = '';
         container.classList.add('ovda');
         const stage = h('div', 'ovda-stage');
         const line = h('div', 'ovda-line');
+        const step = h('div', 'ovda-meta ovda-step');
         const meta = h('div', 'ovda-meta');
         const watch = h('a', 'ovda-watch', 'Watch on openvibe.live');
         watch.target = '_blank';
         watch.rel = 'noopener';
         watch.hidden = true;
         const acts = h('div', 'ovda-acts');
-        const head = h('div');
-        head.append(line, meta, watch, acts);
+        const head = h('div', 'ovda-head');
+        head.append(line, meta, step, watch, acts);
         const body = h('div');
         body.append(stage, head);
         container.append(body);
 
         async function api(path, init = {}) {
-            const base = String(o.base || CODES).replace(/\/+$/, '');
             const t = typeof o.token === 'function' ? await o.token() : o.token;
             readOnly = readOnlyToken(t);
-            const headers = { accept: 'application/json', ...(init.json ? { 'content-type': 'application/json' } : {}), ...(t ? { authorization: `Bearer ${t}` } : {}) };
-            const r = await fetch(base + path, { ...init, headers, credentials: 'omit', body: init.json ? JSON.stringify(init.body || {}) : undefined });
+            if (!t) throw Object.assign(new Error('Sign in to see your agent'), { status: 401 });
+            const headers = { accept: 'application/json', ...(init.json ? { 'content-type': 'application/json' } : {}), authorization: `Bearer ${t}` };
+            const r = await fetch(endpoint(path), { ...init, headers, credentials: 'omit', body: init.json ? JSON.stringify(init.body || {}) : undefined });
             const b = await r.json().catch(() => ({}));
             if (!r.ok) throw Object.assign(new Error(b.detail || `HTTP ${r.status}`), { status: r.status });
             return b;
@@ -138,8 +153,10 @@
         function still(url) {
             if (!url || frameUrl === url) return;
             frameUrl = url;
-            Promise.resolve(typeof o.token === 'function' ? o.token() : o.token).then((t) => fetch(url, { headers: t ? { authorization: `Bearer ${t}` } : {}, credentials: 'omit' }))
-                .then((r) => (r.ok ? r.blob() : null))
+            Promise.resolve(typeof o.token === 'function' ? o.token() : o.token).then((t) => (t
+                ? fetch(endpoint('/api/v1/me/agent-view/frame'), { headers: { authorization: `Bearer ${t}`, accept: 'image/jpeg, image/webp' }, credentials: 'omit' })
+                : null))
+                .then((r) => (r && r.ok ? r.blob() : null))
                 .then((blob) => {
                     if (!blob || gone || frameUrl !== url) return;
                     const next = URL.createObjectURL(blob);
@@ -164,6 +181,7 @@
 
             const live = agent.state === 'live';
             const ended = agent.state === 'ended';
+            container.classList.toggle('is-ended', ended);
             // The picture: the live embed when there is one and it may be framed, else the still and a plain link.
             // A refused frame looks loaded to its parent (the browser shows its own error page), so the embed
             // announces itself (Live's agent-embed.js); no hello in time means frame-ancestors kept it out, and the
@@ -192,14 +210,17 @@
                 if (agent.last_frame_url) {
                     if (!stage.querySelector('img.ovda-still')) frameUrl = null;
                     still(agent.last_frame_url);
-                } else if (!stage.querySelector('img.ovda-still') && !stage.querySelector('.ovda-wait')) {
-                    stage.append(h('div', 'ovda-wait', ended ? 'Nothing to show' : 'Waiting for the desk'));
+                } else if (!ended && !stage.querySelector('img.ovda-still') && !stage.querySelector('.ovda-wait')) {
+                    stage.append(h('div', 'ovda-wait', 'Waiting for the desk'));
                 }
                 // The plain way to the stream, when this browser cannot frame it. It is a real link, not a control.
                 const page = typeof agent.page_url === 'string' && /^https:\/\/openvibe\.live\//.test(agent.page_url) ? agent.page_url : null;
                 if (page) watch.href = page;
                 watch.hidden = !blocked || !page;
             }
+            // A session that ended and left no picture has no stage: a black box saying "Nothing to show" told nobody
+            // anything (the owner, 2026-11-10). The line under it still says what it was and how long it worked.
+            stage.hidden = ended && !embed && !agent.last_frame_url && !stage.querySelector('img');
 
             // The line: what it is doing, one row.
             line.innerHTML = '';
@@ -210,6 +231,11 @@
             if (url) { const a = h('a', null, text); a.href = url; a.rel = 'noopener'; a.target = '_blank'; title.append(a); }
             else title.textContent = text;
             line.append(title);
+
+            const current = agent.current_step;
+            step.textContent = current && typeof current.title === 'string' && current.title.trim()
+                ? `Step: ${current.title} · ${current.status || 'started'}` : '';
+            step.hidden = !step.textContent;
 
             // The meta: the state, the viewers, the curtain, the worked time.
             meta.textContent = '';
@@ -246,6 +272,16 @@
             if (live && !(agent.curtain && agent.curtain.up)) acts.append(control('curtain', `${svg(G.eye)}Curtain now`, 'Hide the screen now; your desk lifts it when it is clear'));
             if (!ended) acts.append(control('mute', `${svg(agent.voice_muted ? G.sound : G.mute)}${agent.voice_muted ? 'Unmute' : 'Mute'}`, agent.voice_muted ? 'Let the agent speak again' : 'Mute the agent\'s voice'));
             if (!ended) acts.append(control('end', `${svg(G.stop)}End`, 'End the agent stream'));
+            // 4.154.0: Float puts the agent's screen in a floating card (overlay.js) that stays on screen as the person
+            // moves around this site and on to other OpenVibe sites, so the Dock can close while they watch.
+            if (embed && !ended) {
+                const b = h('button', null);
+                b.type = 'button';
+                b.dataset.act = 'float';
+                b.innerHTML = `${svg(G.float)}Float`;
+                b.title = 'Keep watching in a small window that follows you';
+                acts.append(b);
+            }
             if (agent.page_url && /^https:\/\/openvibe\.live\//.test(agent.page_url)) {
                 const a = h('a');
                 a.href = agent.page_url;
@@ -325,7 +361,18 @@
             else if (b.dataset.act === 'curtain') control('curtain', b);
             else if (b.dataset.act === 'mute') control('mute', b, { muted: !(agent && agent.voice_muted) });
             else if (b.dataset.act === 'end') control('end', b);
+            else if (b.dataset.act === 'float') floatIt(b);
         });
+
+        function floatIt(btn) {
+            const embed = agent && typeof agent.embed_url === 'string' && EMBED.test(agent.embed_url) ? agent.embed_url : null;
+            const nav = root.OpenVibeNavbar;
+            if (!embed || !nav || typeof nav.overlay !== 'function') { btn.title = 'Floating is not available on this page.'; return; }
+            const pageUrl = agent.page_url && /^https:\/\/openvibe\.live\//.test(agent.page_url) ? agent.page_url : null;
+            nav.overlay({ id: 'agent', src: embed, title: (agent.task && agent.task.title) || agent.title || 'Your agent', live: agent.state === 'live', href: pageUrl || undefined })
+                .then((card) => { if (card && root.OpenVibeDock && typeof root.OpenVibeDock.close === 'function') root.OpenVibeDock.close(); })
+                .catch(() => { btn.title = 'That did not work. Try again.'; });
+        }
 
         refresh();
         return { refresh, destroy() { gone = true; clearTimeout(timer); clearTimeout(frameTimer); root.removeEventListener('message', onFrameHello); if (lastFrame) URL.revokeObjectURL(lastFrame); container.innerHTML = ''; container.classList.remove('ovda'); } };

@@ -4,6 +4,18 @@ The OpenVibe Companion's releases. Each one is a `browser/manifest.json` version
 release](https://github.com/OpenVibers/OpenVibe.Extensions/releases); older entries are in the git
 history.
 
+## 0.9.2 — 2026-11-11
+
+- **The side panel's Dock is OpenVibe.Shared 4.212.0** (was 4.124.0), copied from the release with the
+  Companion's own two patches kept: the read-only Dock token renders the four server controls as links
+  to openvibe.codes, and a Live frame that refuses embedding falls back to the still and a **Watch on
+  openvibe.live** link (Firefox and an unlisted Chrome id never try the frame).
+- The newer Dock brings its **Code** and **Actor** tabs, the one window (`ov-window.js`), the composer,
+  the glyph set, the theme loader and the agent sheet/session, all bundled under `browser/shared/`
+  because the extension's CSP allows no remote script.
+- `AGENT_EMBED_EXTENSION_ORIGINS` on OpenVibe.Live is set to the extension's fixed Chrome id
+  (`chrome-extension://bjcjcfcecpkkmfndegkjekoipdmbgakd`), so the panel can frame the agent stream.
+
 ## 0.9.1 — 2026-11-07
 
 - **The side panel's agent view can read.** OpenVibe.Codes' two agent-view read routes now accept

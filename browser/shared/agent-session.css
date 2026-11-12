@@ -1,0 +1,283 @@
+/* openvibe-shared/agent-session.css: the look of agent-session.js (4.32.0; it was a string inside the script before).
+   Theme tokens only, light or dark; OpenVibe.Design can restyle it. agent-session.js links it from beside itself when a
+   page has not; a page may link it in its <head> to paint styled from the first line. */
+.ovas { --ovas-b: var(--border, rgba(255,255,255,.1)); --ovas-s: var(--bg-secondary, #121826); --ovas-t: var(--bg-tertiary, rgba(255,255,255,.05)); --ovas-mut: var(--text-muted, #8b98ad); --ovas-sec: var(--text-secondary, #a8b3c4); --ovas-ok: color-mix(in srgb, #22c55e 70%, var(--text-primary, #e6edf7)); --ovas-bad: var(--live-red, #f87171); --ovas-add: color-mix(in srgb, #22c55e 18%, transparent); --ovas-del: color-mix(in srgb, #ef4444 18%, transparent); --ovas-code: color-mix(in srgb, var(--bg-primary, #0b1020) 72%, var(--ovas-s));
+    display: grid; gap: 12px; color: var(--text-primary, #e6edf7); font-family: inherit; min-width: 0; }
+.ovas-ic { width: 16px; height: 16px; flex: none; }
+.ovas-head { position: sticky; top: var(--ovnav-real-h, 0px); z-index: 2; display: grid; gap: 8px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--ovas-b); background: color-mix(in srgb, var(--ovas-s) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.ovas-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ovas-pill { display: inline-flex; align-items: center; gap: 6px; flex: none; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: var(--ovas-t); color: var(--ovas-sec); }
+.ovas-pill[data-s="running"], .ovas-pill[data-s="placed"], .ovas-pill[data-s="verifying"] { color: var(--accent-light, var(--accent, #60a5fa)); background: color-mix(in srgb, var(--accent, #3b82f6) 16%, transparent); }
+.ovas-pill[data-s="succeeded"] { color: var(--ovas-ok); background: color-mix(in srgb, #22c55e 15%, transparent); }
+.ovas-pill[data-s="failed"], .ovas-pill[data-s="expired"] { color: var(--ovas-bad); background: color-mix(in srgb, #ef4444 15%, transparent); }
+.ovas-title { flex: 1; min-width: 0; font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovas-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ovas-mut); }
+.ovas-meta b { color: var(--ovas-sec); font-weight: 650; font-variant-numeric: tabular-nums; }
+.ovas-agents { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.ovas-agent { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 650; border: 1px solid var(--ovas-b); color: var(--ovas-sec); }
+.ovas-agent.is-now { border-color: color-mix(in srgb, var(--accent, #3b82f6) 55%, transparent); color: var(--text-primary, #e6edf7); }
+.ovas-plan { display: grid; gap: 6px; padding-top: 2px; }
+.ovas-plan > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 13px; font-weight: 600; }
+.ovas-plan > summary::-webkit-details-marker { display: none; }
+.ovas-plan-now { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovas-plan-now::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--accent, #3b82f6); vertical-align: 1px; }
+.ovas-plan-n { flex: none; font-size: 12px; color: var(--ovas-mut); font-variant-numeric: tabular-nums; }
+.ovas-plan:not([open]) > ol { display: none; }
+.ovas-plan-bar { height: 4px; border-radius: 4px; background: var(--ovas-t); overflow: hidden; }
+.ovas-plan-bar i { display: block; height: 100%; background: var(--accent, #3b82f6); border-radius: inherit; transition: width .3s; }
+.ovas-plan ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; }
+.ovas-plan li { display: flex; gap: 8px; align-items: baseline; color: var(--ovas-sec); }
+.ovas-plan li::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ovas-mut); transform: translateY(1px); }
+.ovas-plan li[data-s="in_progress"] { color: var(--text-primary, #e6edf7); font-weight: 600; }
+.ovas-plan li[data-s="in_progress"]::before { border-color: var(--accent, #3b82f6); background: var(--accent, #3b82f6); animation: ovas-beat 1.2s ease-in-out infinite; }
+.ovas-plan li[data-s="completed"] { color: var(--ovas-mut); text-decoration: line-through; }
+.ovas-plan li[data-s="completed"]::before { background: var(--ovas-ok); border-color: var(--ovas-ok); }
+.ovas-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.ovas-chip { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--ovas-b); background: transparent; color: var(--ovas-sec); font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer; }
+.ovas-chip[aria-pressed="true"] { background: var(--accent-strong, var(--accent, #3472d8)); border-color: transparent; color: var(--on-accent-strong, #fff); }
+.ovas-chip.ovas-follow { margin-left: auto; }
+.ovas-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.ovas-feed > li { min-width: 0; }
+.ovas-msg { padding: 2px 4px; font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+.ovas-msg p { margin: 0 0 8px; } .ovas-msg p:last-child { margin-bottom: 0; }
+.ovas-msg ul, .ovas-msg ol { margin: 4px 0 8px; padding-left: 22px; } .ovas-msg li { margin: 2px 0; }
+.ovas-msg code, .ovas-detail code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; padding: 1px 5px; border-radius: 6px; background: var(--ovas-t); }
+.ovas-msg a { color: var(--accent-light, var(--accent, #60a5fa)); }
+.ovas-code, .ovas-out, .ovas-diff { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--ovas-code); border: 1px solid var(--ovas-b); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.5; overflow: auto; max-height: 50vh; white-space: pre; }
+.ovas-code code { padding: 0; background: none; }
+.ovas-group, .ovas-step { border: 1px solid var(--ovas-b); border-radius: 14px; background: var(--ovas-s); overflow: hidden; }
+.ovas-group > summary, .ovas-step > summary { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 6px 12px; cursor: pointer; list-style: none; }
+.ovas-group > summary::-webkit-details-marker, .ovas-step > summary::-webkit-details-marker { display: none; }
+.ovas-chev { width: 14px; height: 14px; flex: none; color: var(--ovas-mut); transition: transform .15s; }
+details[open] > summary .ovas-chev { transform: rotate(90deg); }
+.ovas-icons { display: inline-flex; flex: none; }
+.ovas-kind { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 9px; background: color-mix(in srgb, var(--accent, #3b82f6) 14%, transparent); color: var(--accent-light, var(--accent, #60a5fa)); }
+.ovas-icons .ovas-kind { width: 24px; height: 24px; border: 2px solid var(--ovas-s); border-radius: 8px; }
+.ovas-icons .ovas-kind + .ovas-kind { margin-left: -7px; }
+.ovas-kind .ovas-ic { width: 14px; height: 14px; }
+.ovas-kind[data-k="edit"], .ovas-kind[data-k="write"] { color: #4ade80; background: color-mix(in srgb, #22c55e 14%, transparent); }
+.ovas-kind[data-k="web"] { color: #38bdf8; background: color-mix(in srgb, #0ea5e9 14%, transparent); }
+.ovas-kind[data-k="agent"] { color: #c084fc; background: color-mix(in srgb, #a855f7 16%, transparent); }
+.ovas-sum { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.ovas-sum b { font-size: 14px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovas-sum small { font-size: 12px; color: var(--ovas-mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ovas-delta { flex: none; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ovas-delta .a { color: var(--ovas-ok); } .ovas-delta .r { color: var(--ovas-bad); margin-left: 4px; }
+.ovas-state { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ovas-mut); font-variant-numeric: tabular-nums; }
+.ovas-state .ovas-ic { width: 15px; height: 15px; }
+.ovas-state[data-s="ok"] .ovas-ic { color: var(--ovas-ok); } .ovas-state[data-s="fail"] { color: var(--ovas-bad); }
+.ovas-spin { position: relative; display: inline-block; width: 4px; height: 4px; margin: 0 6px; border: 0; border-radius: 50%; background: var(--accent, #3b82f6); animation: ovas-hop 1s ease-in-out .15s infinite; }
+.ovas-spin::before, .ovas-spin::after { content: ''; position: absolute; top: 0; width: 4px; height: 4px; border-radius: 50%; background: inherit; animation: ovas-hop 1s ease-in-out infinite; }
+.ovas-spin::before { left: -6px; } .ovas-spin::after { left: 6px; animation-delay: .3s; }
+@keyframes ovas-hop { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-3px); opacity: 1; } }
+.ovas-group > ol { list-style: none; margin: 0; padding: 0 8px 8px; display: grid; gap: 6px; }
+.ovas-group.is-one { border: 0; background: none; }
+.ovas-group.is-one > summary { display: none; }
+.ovas-group.is-one > ol { padding: 0; }
+.ovas-group.is-one .ovas-step { background: var(--ovas-s); border-color: var(--ovas-b); }
+.ovas-group .ovas-step { background: var(--ovas-t); border-color: transparent; }
+.ovas-detail { display: grid; gap: 10px; padding: 0 12px 12px; }
+.ovas-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ovas-mut); margin-bottom: -4px; }
+.ovas-copy { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--ovas-mut); font: inherit; font-size: 11.5px; font-weight: 650; letter-spacing: 0; text-transform: none; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+.ovas-copy:hover { color: var(--text-primary, #e6edf7); background: var(--ovas-t); }
+.ovas-copy .ovas-ic { width: 13px; height: 13px; }
+.ovas-out.is-fail { box-shadow: inset 3px 0 0 var(--ovas-bad); }
+.ovas-wait { font-size: 13px; color: var(--ovas-mut); display: flex; align-items: center; gap: 8px; }
+.ovas-diff span { display: block; padding: 0 6px; margin: 0 -6px; }
+.ovas-diff .a { background: var(--ovas-add); } .ovas-diff .r { background: var(--ovas-del); } .ovas-diff .h { color: var(--ovas-mut); }
+.ovas-sub { margin: 0 8px 8px; padding: 8px 0 0 12px; border-left: 2px solid color-mix(in srgb, #a855f7 45%, transparent); display: grid; gap: 8px; }
+.ovas-handoff { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ovas-sec); }
+.ovas-handoff::before, .ovas-handoff::after { content: ''; flex: 1; height: 1px; background: var(--ovas-b); }
+.ovas-hand { display: grid; justify-items: center; gap: 4px; max-width: 82%; text-align: center; }
+.ovas-hand-row { display: inline-flex; align-items: center; gap: 6px; }
+.ovas-hand-row .ovas-ic { color: var(--ovas-mut); }
+.ovas-hand small { font-size: 12.5px; color: var(--ovas-mut); line-height: 1.4; }
+.ovas-note { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; padding: 9px 12px; border-radius: 12px; font-size: 13.5px; background: color-mix(in srgb, #f59e0b 12%, transparent); color: var(--text-primary, #e6edf7); }
+.ovas-note[data-level="error"] { background: color-mix(in srgb, #ef4444 13%, transparent); }
+.ovas-note[data-level="info"] { background: color-mix(in srgb, #22c55e 10%, transparent); }
+.ovas-note[data-level="info"] .ovas-ic { color: var(--ovas-ok); }
+.ovas-note .ovas-ic { color: #f59e0b; margin-top: 2px; } .ovas-note[data-level="error"] .ovas-ic { color: var(--ovas-bad); }
+.ovas-done { display: grid; gap: 6px; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, #22c55e 40%, transparent); background: color-mix(in srgb, #22c55e 8%, transparent); }
+.ovas-done[data-ok="0"] { border-color: color-mix(in srgb, #ef4444 40%, transparent); background: color-mix(in srgb, #ef4444 8%, transparent); }
+.ovas-done > b { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.ovas-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 4px; font-size: 12.5px; color: var(--ovas-mut); }
+.ovas-line::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--ovas-mut); opacity: .7; }
+.ovas-extra { display: grid; gap: 8px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--ovas-b); background: var(--ovas-s); font-size: 13.5px; color: var(--ovas-sec); }
+.ovas-empty { padding: 18px; text-align: center; color: var(--ovas-mut); font-size: 13.5px; border: 1px dashed var(--ovas-b); border-radius: 14px; }
+.ovas [hidden] { display: none !important; }
+@keyframes ovas-beat { 0%, 100% { transform: translateY(1px) scale(.8); opacity: .6; } 50% { transform: translateY(1px) scale(1); opacity: 1; } }
+@media (hover: hover) { .ovas-group > summary:hover, .ovas-step > summary:hover { background: var(--bg-hover, rgba(255,255,255,.04)); } }
+@media (max-width: 640px) {
+    .ovas-head { padding: 10px 12px; border-radius: 14px; } .ovas-msg { font-size: 14.5px; }
+    .ovas-code, .ovas-out, .ovas-diff { font-size: 12px; max-height: 45vh; }
+    .ovas-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 0 2px; } .ovas-bar::-webkit-scrollbar { display: none; }
+    .ovas-chip { flex: none; } .ovas-icons .ovas-kind + .ovas-kind { display: none; }
+}
+
+/* Files changed (4.32.0): every file the agents edited or wrote, with its +/−; a tap opens its step. */
+.ovas-files { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ovas-file { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 6px 12px; border-radius: 14px; border: 1px solid var(--ovas-b); background: var(--ovas-s); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ovas-file:hover { background: var(--bg-hover, rgba(255,255,255,.04)); }
+.ovas-file:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+.ovas-file-n { flex: none; font-size: 12px; color: var(--ovas-mut); }
+/* A step's raw input, folded. */
+.ovas-raw > summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ovas-mut); }
+.ovas-raw > summary::-webkit-details-marker { display: none; }
+.ovas-raw > summary .ovas-chev { width: 12px; height: 12px; }
+.ovas-raw[open] > summary .ovas-chev { transform: rotate(90deg); }
+.ovas-raw .ovas-label { margin: 8px 0 0; }
+.ovas-raw pre { margin-top: 8px; }
+/* Cost: per agent in the head, per step on its row when the agent reports it. */
+.ovas-agent-cost { margin-left: 6px; font-weight: 600; color: var(--ovas-mut); font-variant-numeric: tabular-nums; }
+.ovas-cost { flex: none; font-size: 12px; font-weight: 650; color: var(--ovas-mut); font-variant-numeric: tabular-nums; }
+/* The action bar (Approve / Continue / Stop), sticky at the bottom while it is needed. */
+.ovas-actions { position: sticky; bottom: max(8px, env(safe-area-inset-bottom, 0px)); z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--ovas-b); background: color-mix(in srgb, var(--ovas-s) 94%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.ovas-actions p { flex: 1 1 260px; min-width: 0; margin: 0; font-size: 13px; line-height: 1.4; color: var(--ovas-sec); }
+.ovas-actions { justify-content: flex-end; }
+.ovas-act { min-height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--ovas-b); background: transparent; color: var(--text-primary, #e6edf7); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ovas-act.is-primary { background: var(--accent-strong, var(--accent, #3472d8)); border-color: transparent; color: var(--on-accent-strong, var(--on-accent, #fff)); }
+.ovas-act.is-danger { color: var(--ovas-bad); border-color: color-mix(in srgb, var(--ovas-bad) 45%, var(--ovas-b)); }
+.ovas-act:disabled { opacity: .55; cursor: default; }
+.ovas-act:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+
+/* Attachments (4.50.0): the images and files a step read, wrote or produced. A group's header shows them while the
+   group is folded; a message's sit under its text. The URLs come from the product; only the page's own origin and
+   Media's load. */
+.ovas-group > summary, .ovas-step > summary { flex-wrap: wrap; row-gap: 8px; }
+.ovas-att-slot { flex-basis: 100%; order: 9; display: block; min-width: 0; }
+.ovas-att-slot:empty { display: none; }
+.ovas-att { display: grid; gap: 8px; width: 100%; min-width: 0; max-width: 100%; }
+.ovas-att-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; min-width: 0; }
+.ovas-att-img { box-sizing: border-box; display: block; width: 136px; flex: none; padding: 0; border: 1px solid var(--ovas-b); border-radius: 12px; overflow: hidden; background: var(--ovas-t); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ovas-att-img img { display: block; width: 136px; height: 92px; object-fit: cover; background: var(--ovas-t); }
+.ovas-att-chip { box-sizing: border-box; display: inline-flex; align-items: center; gap: 7px; flex: none; max-width: 220px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--ovas-b); background: var(--ovas-t); color: var(--ovas-sec); font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer; }
+.ovas-att-chip .ovas-ic { width: 15px; height: 15px; flex: none; color: var(--accent-light, var(--accent, #60a5fa)); }
+.ovas-att-chip[data-role="read"] .ovas-ic { color: #38bdf8; }
+.ovas-att-chip[data-role="wrote"] .ovas-ic { color: #4ade80; }
+.ovas-att-cap { display: block; min-width: 0; font-size: 11.5px; line-height: 1.3; color: var(--ovas-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ovas-att-img .ovas-att-cap { padding: 5px 7px; }
+.ovas-att-chip .ovas-att-cap { padding: 0; }
+.ovas-att:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+.ovas-att-img:hover, .ovas-att-chip:hover { background: var(--bg-hover, rgba(255,255,255,.06)); }
+/* The preview sheet: one attachment, opened by a tap. */
+.ovas-sheet { box-sizing: border-box; position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--bg-primary, #0b1020) 80%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.ovas-sheet[hidden] { display: none; }
+.ovas-sheet-panel { box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; width: min(960px, 92vw); max-height: min(92vh, 920px); padding: 14px; border-radius: 18px; border: 1px solid var(--ovas-b); background: var(--ovas-s); color: var(--text-primary, #e6edf7); box-shadow: 0 24px 70px rgba(0,0,0,.45); }
+.ovas-sheet-bar { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ovas-sheet-bar b { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovas-sheet-x { width: 40px; height: 40px; flex: none; border-radius: 999px; border: 1px solid var(--ovas-b); background: transparent; color: inherit; font: inherit; font-size: 15px; line-height: 1; cursor: pointer; }
+.ovas-sheet-x:focus-visible, .ovas-sheet-foot a:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+.ovas-sheet-body { min-width: 0; min-height: 0; overflow: auto; display: grid; }
+.ovas-prev { min-width: 0; display: grid; }
+.ovas-prev-img { display: block; width: 100%; height: auto; max-height: 74vh; object-fit: contain; border-radius: 12px; background: var(--ovas-t); touch-action: none; }
+.ovas-prev-media { display: block; width: 100%; max-height: 74vh; border-radius: 12px; background: #000; }
+.ovas-prev-audio { width: 100%; }
+.ovas-prev-pdf { width: 100%; height: 72vh; border: 0; border-radius: 12px; background: #fff; }
+.ovas-prev-code { margin: 0; padding: 12px; border-radius: 12px; border: 1px solid var(--ovas-b); background: var(--ovas-code); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.5; overflow: auto; max-height: 70vh; white-space: pre; }
+.ovas-prev-text { min-width: 0; }
+.ovas-prev-text .ovas-msg { padding: 0; }
+.ovas-prev-note { margin: 0 0 10px; font-size: 13px; color: var(--ovas-mut); }
+.ovas-sheet-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.ovas-sheet-foot a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--ovas-b); background: transparent; color: inherit; text-decoration: none; font-size: 13px; font-weight: 700; }
+.ovas-sheet-foot .ovas-sheet-open { background: var(--accent-strong, var(--accent, #3472d8)); border-color: transparent; color: var(--on-accent-strong, #fff); }
+.ovas-csv { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ovas-csv th, .ovas-csv td { border: 1px solid var(--ovas-b); padding: 5px 8px; text-align: left; white-space: nowrap; }
+.ovas-csv th { background: var(--ovas-t); font-weight: 700; }
+.ovas-tok-key { color: var(--accent-light, var(--accent, #60a5fa)); }
+.ovas-tok-str { color: var(--ovas-ok); }
+.ovas-tok-num { color: #fbbf24; }
+.ovas-tok-kw { color: #c084fc; }
+.ovas-tok-com { color: var(--ovas-mut); font-style: italic; }
+
+@media (max-width: 760px) {
+    /* A phone: the head does not stick, so it never floats over the steps it sits above. */
+    .ovas-head { position: static; }
+}
+@media (max-width: 640px) {
+    /* Phones: bigger tap targets, and the preview sheet takes the whole screen. */
+    .ovas-att-chip { min-height: 44px; padding: 0 14px; }
+    .ovas-att-chip .ovas-att-cap { font-size: 12px; }
+    .ovas-sheet { padding: 0; align-items: stretch; }
+    .ovas-sheet-panel { width: 100%; max-height: 100vh; height: 100vh; border-radius: 0; border: 0; padding: 12px; }
+    .ovas-sheet-x, .ovas-sheet-foot a { min-height: 44px; }
+    .ovas-prev-img { max-height: 68vh; }
+}
+
+/* ── Protocol 1.2 (4.205.0, ask 354): phases, thinking, sources, card mode ───────────────────────────────────── */
+.ovas-phase { display: flex; align-items: center; gap: 9px; margin: 6px 2px 0; font-size: 12.5px; letter-spacing: .02em; color: var(--ovas-mut, var(--text-secondary, #9fb0cf)); }
+.ovas-phase b { font-weight: 750; color: var(--text-primary, #e6edf7); }
+.ovas-phase-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--accent, #3b82f6); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #3b82f6) 22%, transparent); }
+.ovas-phase[data-s="running"] .ovas-phase-dot { animation: ovasBreathe 1.6s ease-in-out infinite; }
+.ovas-phase[data-s="done"] .ovas-phase-dot { background: var(--ovas-ok, #22c55e); box-shadow: none; }
+.ovas-phase::after { content: ""; flex: 1; height: 1px; background: var(--ovas-b, rgba(255,255,255,.1)); }
+@keyframes ovasBreathe { 50% { transform: scale(calc(1 - .25 * var(--ov-move, 1))); opacity: calc(1 - .5 * var(--ov-move, 1)); } }
+.ovas-think details { border-radius: 12px; }
+.ovas-think summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 13px; color: var(--ovas-mut, var(--text-secondary, #9fb0cf)); }
+.ovas-think summary::-webkit-details-marker { display: none; }
+.ovas-think-dots { width: 18px; height: 6px; flex: none; background: radial-gradient(circle, currentColor 2px, transparent 2.5px) 0 50% / 6px 6px repeat-x; animation: ovasDots 1.1s linear infinite; }
+.ovas-think.is-done .ovas-think-dots { animation: none; opacity: .5; }
+@keyframes ovasDots { 50% { opacity: .35; } }
+.ovas-think-body { margin: 6px 0 0 26px; padding: 8px 12px; border-left: 2px solid var(--ovas-b, rgba(255,255,255,.1)); font-size: 13px; line-height: 1.5; white-space: pre-wrap; color: var(--ovas-mut, var(--text-secondary, #9fb0cf)); max-height: 320px; overflow: auto; }
+.ovas-sources { border: 1px solid var(--ovas-b, rgba(255,255,255,.1)); border-radius: 14px; padding: 8px 12px; background: var(--ovas-t, rgba(255,255,255,.04)); }
+.ovas-sources > summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; font-size: 13px; font-weight: 650; }
+.ovas-sources > summary::-webkit-details-marker { display: none; }
+.ovas-src-tiles { display: inline-flex; }
+.ovas-src-tile { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: -6px; border-radius: 7px; font-size: 11px; font-weight: 800; color: #fff;
+    background: hsl(var(--h, 210) 55% 42%); box-shadow: 0 0 0 2px var(--ovas-s, #121826); }
+.ovas-src-tile:first-child { margin-left: 0; }
+.ovas-sources ol { display: grid; gap: 6px; margin: 10px 0 2px; padding: 0; list-style: none; max-height: 340px; overflow: auto; }
+.ovas-sources li { display: grid; gap: 1px; min-width: 0; }
+.ovas-sources li a { color: var(--accent-light, var(--accent, #60a5fa)); text-decoration: none; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovas-sources li a:hover { text-decoration: underline; }
+.ovas-sources li small { color: var(--ovas-mut, var(--text-secondary, #9fb0cf)); font-size: 11.5px; }
+.ovas--card { gap: 8px; }
+.ovas--card .ovas-head { position: static; padding: 10px 12px; }
+.ovas--card :is(.ovas-bar, .ovas-files) { display: none !important; }
+.ovas--card .ovas-feed > li:not(:nth-last-child(-n+3)) { display: none; }
+.ovas--card .ovas-feed > li .ovas-out { max-height: 120px; }
+.ovas-open { justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none;
+    color: var(--accent-light, var(--accent, #60a5fa)); background: color-mix(in srgb, var(--accent, #3b82f6) 14%, transparent); }
+html[data-ov-motion="off"] :is(.ovas-phase-dot, .ovas-think-dots) { animation: none !important; }
+/* 3. A card keeps its groups folded: the head says what they did. */
+.ovas--card .ovas-group:not(.is-one) > :not(summary) { display: none; }
+.ovas--card .ovas-group:not(.is-one) > summary .ovas-chev { display: none; }
+
+/* ── Compact runs (2026-11-11, the owner with the portal's run view open: "consider stuff like this … parse and expandable
+   and compact mode … smart"): a group is one line, its state first, its words, the step it is on in mono, the chevron
+   last; the steps inside are light rows; the head says what it is doing now; three dots while it works; a box to talk
+   to it. Every motion follows --ov-move. */
+.ovas-feed { gap: 6px; }
+.ovas-group > summary { min-height: 42px; padding: 4px 10px; gap: 9px; }
+.ovas-group:not(.is-one) > summary .ovas-state { order: -1; }
+.ovas-group:not(.is-one) > summary .ovas-icons { display: none; }
+.ovas-group:not(.is-one) > summary .ovas-chev { order: 99; transition: transform var(--ov-dur-2, .2s) var(--ov-ease-out, ease); }
+.ovas-group[open]:not(.is-one) > summary .ovas-chev { transform: rotate(90deg); }
+.ovas-group:not(.is-one) > summary .ovas-sum { display: flex; align-items: baseline; gap: 9px; }
+.ovas-group:not(.is-one) > summary .ovas-sum b { flex: none; max-width: 60%; }
+.ovas-group:not(.is-one) > summary .ovas-sum small { flex: 1 1 auto; min-width: 0; }
+.ovas-group > ol .ovas-step { border: 0; background: transparent; border-radius: 10px; }
+.ovas-group > ol .ovas-step > summary { min-height: 38px; padding: 3px 8px; }
+.ovas-group > ol .ovas-step > summary:hover { background: color-mix(in srgb, var(--text-primary, #fff) 5%, transparent); }
+.ovas-group > ol .ovas-kind { width: 24px; height: 24px; border-radius: 7px; }
+.ovas-meta [data-m="now"] { flex: 1 1 100%; min-width: 0; order: -1; }
+.ovas-now { display: flex; align-items: center; gap: 7px; min-width: 0; font: 12.5px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-primary, #e6edf7); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ovas-now::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent, #3b82f6); animation: ovasBreathe 1.6s ease-in-out infinite; }
+.ovas-working { display: flex; gap: 5px; padding: 4px 6px; }
+.ovas-working[hidden] { display: none; }
+.ovas-working i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent, #3b82f6); opacity: .35; animation: ovasWork 1.2s ease-in-out infinite; }
+.ovas-working i:nth-child(2) { animation-delay: .16s; } .ovas-working i:nth-child(3) { animation-delay: .32s; }
+@keyframes ovasWork { 40% { opacity: 1; transform: translateY(calc(-3px * var(--ov-move, 1))); } }
+.ovas-you { justify-self: end; max-width: 85%; padding: 8px 12px; border-radius: 14px 14px 4px 14px; background: color-mix(in srgb, var(--accent, #3b82f6) 22%, transparent); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ovas-you:not(.is-sent):not(.is-failed) { opacity: .6; }
+.ovas-you.is-failed { outline: 1px solid var(--ovas-bad, #ef4444); }
+.ovas-say { position: sticky; bottom: 0; display: grid; gap: 4px; padding: 8px; border-radius: 16px; border: 1px solid var(--ovas-b, rgba(255,255,255,.1)); background: var(--ovas-s, #121826); }
+.ovas-say textarea { flex: 1; min-height: 40px; max-height: 160px; resize: none; padding: 9px 12px; border: 0; border-radius: 12px; background: var(--ovas-t, rgba(255,255,255,.05)); color: inherit; font: inherit; font-size: 15px; }
+.ovas-say textarea:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 0; }
+.ovas-say-send { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--accent-strong, var(--accent, #2563eb)); color: #fff; cursor: pointer; }
+.ovas-say.is-busy .ovas-say-send { opacity: .5; }
+html[data-ov-motion="off"] :is(.ovas-now, .ovas-working i)::before, html[data-ov-motion="off"] .ovas-working i { animation: none !important; }
+.ovas-you-files { display: block; margin-top: 4px; font-size: 12px; opacity: .8; }
+.ovas-say .ovt-c-row { display: flex; align-items: center; gap: 6px; }
+.ovas-say .ovt-c-tools { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ovas-say .ovt-c-note { margin: 0; font-size: 12px; color: var(--ovas-mut, var(--text-secondary, #9fb0cf)); }
+.ovas-say .ovt-c-note:empty { display: none; }
