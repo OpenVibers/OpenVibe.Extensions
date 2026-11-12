@@ -5,7 +5,7 @@ Scripts for streaming from and controlling hardware devices (Raspberry Pi, singl
 > **Connecting a new robot? Use [OpenVibe.Bot](https://openvibe.bot) and the [OpenVibe Link](https://github.com/OpenVibers/OpenVibe.Link).**
 > The Link pairs with a one-time code (no stream key) and runs your driver as a plugin
 > ([write a driver](https://openvibe.bot/docs/drivers)); Bot gives the robot a panel built from its profile, roles, a
-> queue, limits and a latched e-stop, and a Live channel can show that panel under its stream. The controller here
+> queue and limits, and a Live channel can show that panel under its stream. The controller here
 > uses Live's stream-key hardware socket, which keeps working for existing setups and is retired once they have moved
 > to Bot.
 
