@@ -11,8 +11,9 @@
  *   storage.getNetworkToken/setNetworkToken/clearNetworkToken
  *                           the person's OpenVibe sign-in for the Dock in the side panel, also in
  *                           storage.local
- *   permissions.hasApi/requestApi          the host permission for the API origin (Firefox
- *                           lets people withhold it; reporting needs it)
+ *   permissions.hasApi/requestApi          the host permissions for the API, Dock and Mail
+ *                           origins (Firefox lets people withhold them; reporting and the
+ *                           masks need them)
  *   scripting.tryCodes(tabId, codes)       when the person presses "Try these codes on this page": inject
  *                           lib/autoapply.js into that tab (activeTab grants it for this one tab, after
  *                           that click) and run it with the codes; returns what it saw
@@ -33,7 +34,12 @@
     'use strict';
 
     function createPlatform(ext, config) {
-        const origins = [config.API_ORIGIN + '/*', config.NETWORK_ORIGIN + '/*', config.CHAT_ORIGIN + '/*'];
+        // The origins the Companion holds a host permission for. OpenVibe.Mail is one of them: the
+        // mask flow fetches openvibe.email from the background worker, and a background fetch
+        // without the host permission is answered by the API's CORS, not by the API.
+        const origins = [config.API_ORIGIN, config.NETWORK_ORIGIN, config.CHAT_ORIGIN, config.MAIL_ORIGIN]
+            .filter(Boolean)
+            .map(function (origin) { return origin + '/*'; });
         const sessionMemory = new Map();
         const call = function (fn, thisArg, args) {
             // chrome.* in MV3 and browser.* both return promises.

@@ -45,9 +45,9 @@ function unzip(buf) {
         const src = path.join(__dirname, '..', 'browser');
         for (const [name, data] of files) assert.ok(data.equals(fs.readFileSync(path.join(src, name))), name);
         assert.ok(files.has('manifest.json') && files.has('popup.html') && files.has('lib/api.js') && files.has('icons/icon-128.png'));
-        // OpenVibe.Mail is in the CSP's connect-src (the Companion reaches the masks with CORS) but it is
-        // not one of the four host permissions.
-        assert.deepStrictEqual(auditManifest(JSON.parse(files.get('manifest.json')), { apiOrigin: 'https://openvibe.coupons', origins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.locker'], connectOrigins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.email', 'https://openvibe.locker'] }), []);
+        // OpenVibe.Mail is one of the six host permissions and one of the connect-src origins: the
+        // mask flow fetches openvibe.email from the background worker.
+        assert.deepStrictEqual(auditManifest(JSON.parse(files.get('manifest.json')), { apiOrigin: 'https://openvibe.coupons', origins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.locker', 'https://openvibe.email'], connectOrigins: ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.email', 'https://openvibe.locker'] }), []);
     });
 
     await check('the build is reproducible', async () => {
@@ -61,7 +61,7 @@ function unzip(buf) {
         assert.match(r.out, /-dev\.zip$/);
         const files = unzip(fs.readFileSync(r.out));
         const m = JSON.parse(files.get('manifest.json'));
-        assert.deepStrictEqual(m.host_permissions, ['http://localhost:4850/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*', 'https://openvibe.locker/*']);
+        assert.deepStrictEqual(m.host_permissions, ['http://localhost:4850/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*', 'https://openvibe.locker/*', 'https://openvibe.email/*']);
         assert.match(m.content_security_policy.extension_pages, /connect-src http:\/\/localhost:4850 https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes https:\/\/openvibe\.email https:\/\/openvibe\.locker;/);
         assert.match(m.name, /development/);
         assert.match(files.get('lib/config.js').toString(), /API_ORIGIN: 'http:\/\/localhost:4850'/);

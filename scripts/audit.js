@@ -9,10 +9,12 @@
  *                          active tab only, when the person presses a button of the Companion: activeTab is the only
  *                          host access; Firefox's sidebar_action, the side panel there, needs no permission of its own;
  *                          identity starts the Dock's one-click OAuth sign-in)
- *   host_permissions       exactly the API origin, the Network origin, the Chat origin and the Codes
- *                          origin, all https://openvibe.<tld> sites (the coupon API, the Dock's state,
- *                          the Dock's Chats tab, and the Dock's agent view). OpenVibe.Mail is not among them: the
- *                          Companion reaches it with CORS, the way the Coupons API lets a first-party extension in.
+ *   host_permissions       exactly the API origin, the Network origin, the Chat origin, the Codes origin,
+ *                          the Locker origin and the Mail origin, all https://openvibe.<tld> sites (the coupon
+ *                          API, the Dock's state, the Dock's Chats tab, the Dock's agent view, the encrypted
+ *                          logins and the masks). OpenVibe.Mail is among them because the mask flow fetches
+ *                          it from the background worker: without the host permission that request is answered
+ *                          by the API's CORS, and OpenVibe.Mail's CORS allow-list is the owner's to set.
  *   background             the service worker that holds the person's sign-in and talks to OpenVibe.Mail, and
  *                          nothing else: one key, one file, one type
  *   allowed key            key (Chrome's public key that fixes the extension id; dropped from the Firefox zip)
@@ -23,10 +25,9 @@
  *                          side_panel and sidebar_action, are on it)
  *   CSP                    script-src 'self' only; style-src 'self' 'unsafe-inline' (the Dock draws its
  *                          own styles in a <style> element); img-src 'self' blob: (the agent view's
- *                          still is a local object URL); connect-src only the OpenVibe origins (the four
- *                          the extension may reach with a host permission, and OpenVibe.Mail, which it
- *                          reaches with CORS); frame-src only Live's agent embed; no other unsafe-*, wildcard,
- *                          data: or remote http
+ *                          still is a local object URL); connect-src only the OpenVibe origins (the same
+ *                          ones it holds a host permission for); frame-src only Live's agent embed; no other
+ *                          unsafe-*, wildcard, data: or remote http
  *   pages                  popup/options/panel HTML load only local scripts, no inline script
  *   config                 lib/config.js API_ORIGIN equals the host permission's origin
  *   hand-offs              lib/config.js HANDOFF_ORIGINS are https://openvibe.<tld> sites only (the
@@ -125,9 +126,10 @@ function auditDir(dir) {
     if (!origin) problems.push('lib/config.js has no API_ORIGIN');
     if (!handoffs.length) problems.push('lib/config.js has no HANDOFF_ORIGINS');
     for (const h of handoffs) if (!/^https:\/\/openvibe\.[a-z]+$/.test(h)) problems.push(`hand-off origin ${h} is not an https://openvibe.<tld> site`);
-    const origins = [origin, network, chat, codes, locker].filter(Boolean);
+    const origins = [origin, network, chat, codes, locker, mail].filter(Boolean);
     for (const o of [network, chat, codes, mail, locker].filter(Boolean)) if (!/^https:\/\/openvibe\.[a-z]+$/.test(o)) problems.push(`${o} is not an https://openvibe.<tld> site`);
-    const connectOrigins = origins.concat(mail ? [mail] : []);
+    // Every host permission is also a connect-src origin: the extension may reach nothing else.
+    const connectOrigins = origins.slice();
     problems.push(...auditManifest(manifest, { apiOrigin: origin, origins, connectOrigins }));
     for (const page of ['popup.html', 'options.html', 'panel.html', 'clipboard.html']) problems.push(...auditPage(fs.readFileSync(path.join(dir, page), 'utf8'), page));
     return { manifest, origin, origins, connectOrigins, problems };
