@@ -11,16 +11,16 @@ const { check, done } = require('./helpers/harness');
 
 const DIR = path.join(__dirname, '..', 'browser');
 const ORIGIN = 'https://openvibe.coupons';
-const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.locker'];
+const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https://openvibe.chat', 'https://openvibe.codes', 'https://openvibe.locker', 'https://openvibe.email'];
 
 (async () => {
     const { manifest, origin, problems } = auditDir(DIR);
 
-    await check('the shipped manifest passes the audit: activeTab + identity + scripting + storage + sidePanel, four OpenVibe host permissions, MV3', async () => {
+    await check('the shipped manifest passes the audit: activeTab + identity + scripting + storage + sidePanel, six OpenVibe host permissions, MV3', async () => {
         assert.deepStrictEqual(problems, []);
         assert.strictEqual(origin, ORIGIN);
         assert.deepStrictEqual(manifest.permissions.slice().sort(), ['activeTab', 'alarms', 'clipboardWrite', 'identity', 'offscreen', 'scripting', 'storage']);
-        assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*', 'https://openvibe.locker/*']);
+        assert.deepStrictEqual(manifest.host_permissions, ['https://openvibe.coupons/*', 'https://openvibe.network/*', 'https://openvibe.codes/*', 'https://openvibe.chat/*', 'https://openvibe.locker/*', 'https://openvibe.email/*']);
         assert.strictEqual(manifest.sidebar_action.default_panel, 'panel.html', 'the Dock lives in the side panel');
         for (const k of ['content_scripts', 'web_accessible_resources', 'externally_connectable', 'optional_permissions', 'optional_host_permissions']) {
             assert.ok(!(k in manifest), `${k} must not be present`);
@@ -93,8 +93,8 @@ const ORIGINS = ['https://openvibe.coupons', 'https://openvibe.network', 'https:
 
     await check('the API origin agrees across lib/config.js, host_permissions and the CSP connect-src', async () => {
         const csp = manifest.content_security_policy.extension_pages;
-        // OpenVibe.Mail is in the CSP's connect-src (the Companion reaches the masks with CORS,
-        // the way the Coupons API lets a first-party extension in) but it is not a host permission.
+        // OpenVibe.Mail is a host permission (the mask flow fetches openvibe.email from the background
+        // worker) and it is in the CSP's connect-src with the others.
         assert.match(csp, /connect-src https:\/\/openvibe\.coupons https:\/\/openvibe\.network https:\/\/openvibe\.chat https:\/\/openvibe\.codes https:\/\/openvibe\.email https:\/\/openvibe\.locker;/);
         assert.match(csp, /style-src 'self' 'unsafe-inline';/);
         assert.match(csp, /img-src 'self' blob:;/);
