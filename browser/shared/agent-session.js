@@ -970,7 +970,7 @@
             const ag = head.querySelector('.ovas-agents'); ag.textContent = '';
             const shown = new Set();
             S.agents.forEach((a, i) => {
-                if (i) ag.appendChild(el('span', '', '→'));
+                if (i) { const to = el('span', 'ovas-hand'); to.setAttribute('aria-hidden', 'true'); to.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="14" height="14" style="margin-left:5px;vertical-align:-2px"><path d="M3.2 12h16.7M13.7 5.7l6.3 6.3l-6.3 6.3"/></svg>'; ag.appendChild(to); }
                 const c = el('span', `ovas-agent${i === S.agents.length - 1 ? ' is-now' : ''}`, agentName(a.agent)); if (a.model) c.title = a.model;
                 // An agent's cost once, on its last chip (an agent may come back after a hand-off).
                 const cost = S.agentCost.get(a.agent);

@@ -639,7 +639,7 @@ html[data-ov-motion="off"] .ov-float-tab, html[data-ov-motion="off"] .ov-float-r
             tab.className = 'ov-float-tab';
             tab.dataset.ovFloatTab = '';
             tab.setAttribute('aria-label', 'Bring it back');
-            tab.innerHTML = '<span class="ov-float-tab-l" aria-hidden="true">‹</span><span class="ov-float-tab-r" aria-hidden="true">›</span>';
+            tab.innerHTML = '<span class="ov-float-tab-l" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><path d="M16.1 3.6l-8.4 8.4l8.4 8.4"/></svg></span><span class="ov-float-tab-r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><path d="M7.9 3.6l8.4 8.4l-8.4 8.4"/></svg></span>';
             inst.el.append(tab);
             inst.ownedTab = tab;
         }

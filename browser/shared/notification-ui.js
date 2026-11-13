@@ -907,7 +907,7 @@
                 </div>
             </div>
             <div class="openvibe-nv-list" data-role="list" role="tabpanel" aria-label="All"></div>
-            <div class="openvibe-nv-foot"><span data-role="status"></span>${mode === 'dock' ? `<button type="button" class="ovn-foot-read" data-act="read-all-foot">${svg(ICON.checkAll)}Mark all read</button>` : ''}${mode === 'panel' || mode === 'dock' ? `<a href="${esc(inboxUrl())}">Full inbox →</a>` : ''}</div>`;
+            <div class="openvibe-nv-foot"><span data-role="status"></span>${mode === 'dock' ? `<button type="button" class="ovn-foot-read" data-act="read-all-foot">${svg(ICON.checkAll)}Mark all read</button>` : ''}${mode === 'panel' || mode === 'dock' ? `<a href="${esc(inboxUrl())}">Full inbox<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="14" height="14" style="margin-left:5px;vertical-align:-2px"><path d="M3.2 12h16.7M13.7 5.7l6.3 6.3l-6.3 6.3"/></svg></a>` : ''}</div>`;
         const list = root.querySelector('[data-role="list"]');
         const input = root.querySelector('input[type="search"]');
         let qTimer = null;
