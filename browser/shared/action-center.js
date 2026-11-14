@@ -175,7 +175,7 @@
             <div class="ovac-tabs" role="tablist" aria-label="Agents">${BUCKETS.map(([id]) => `<button type="button" role="tab" data-tab="${id}" aria-selected="false" tabindex="-1">${SHORT[id]}<span class="n" data-n="${id}"></span></button>`).join('')}</div>
             <div class="ovac-note" hidden></div>
             <div class="ovac-list" role="tabpanel" aria-live="polite"></div>
-            <div class="ovac-foot"><span data-role="when"></span><a href="https://openvibe.actor/">Give an agent a task →</a></div>`;
+            <div class="ovac-foot"><span data-role="when"></span><a href="https://openvibe.actor/">Give an agent a task<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="14" height="14" style="margin-left:5px;vertical-align:-2px"><path d="M3.2 12h16.7M13.7 5.7l6.3 6.3l-6.3 6.3"/></svg></a></div>`;
         document.body.appendChild(el);
         const tabs = [...el.querySelectorAll('[role="tab"]')];
         const pick = (b, focus) => { setTab(b.dataset.tab); if (focus) b.focus(); };

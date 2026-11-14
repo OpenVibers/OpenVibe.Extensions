@@ -142,7 +142,7 @@
             if (a.instructions) name.append(h('small', '', String(a.instructions).slice(0, 160)));
             else if (a.kind) name.append(h('small', '', a.kind));
             who.append(face, name);
-            if (opts.openHref) { const go = h('a', 'ovas-open', 'Open ↗'); go.href = opts.openHref; go.target = '_blank'; go.rel = 'noopener'; who.append(go); }
+            if (opts.openHref) { const go = h('a', 'ovas-open', 'Open'); go.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="14" height="14" style="margin-left:5px;vertical-align:-2px"><path d="M14 3.8h6.3v6.3M20.2 3.8l-9.4 9.4M18.2 14.2v4.2a2.1 2.1 0 0 1-2.1 2.1H5.6a2.1 2.1 0 0 1-2.1-2.1V7.9a2.1 2.1 0 0 1 2.1-2.1h4.2"/></svg>'); go.href = opts.openHref; go.target = '_blank'; go.rel = 'noopener'; who.append(go); }
 
             const asks = Array.isArray(sheet.asks) ? sheet.asks : [];
             const work = Array.isArray(sheet.work) ? sheet.work : [];

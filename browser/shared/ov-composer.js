@@ -315,7 +315,7 @@ html[data-ov-motion=off] .ovc-file, html[data-ov-motion=off] .ovc-pop, html[data
                 if (!uploader() && !accepts(asFile)) return;
                 e.preventDefault();
                 add([asFile], { lines, text: t });
-                say('The long paste went in as a file: ↩ on it puts it back in the box.');
+                say('The long paste went in as a file: its Put back button returns it to the box.');
             }
         });
         const zone = form.closest('[data-ovt]') || form;

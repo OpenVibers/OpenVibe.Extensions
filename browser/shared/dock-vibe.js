@@ -189,7 +189,7 @@
         panel.textContent = '';
         const head = h('div', 'ovdk-thread-h ovdk-vibe-h');
         const title = h('b', '', 'Vibe');
-        const back = h('button', 'ovdk-vibe-back'); back.type = 'button'; back.setAttribute('aria-label', 'Back to your chats'); back.textContent = '←'; back.addEventListener('click', () => { ctx.save({ vibe: null }); openList(); });
+        const back = h('button', 'ovdk-vibe-back'); back.type = 'button'; back.setAttribute('aria-label', 'Back to your chats'); back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><path d="M16.1 3.6l-8.4 8.4l8.4 8.4"/></svg>'; back.addEventListener('click', () => { ctx.save({ vibe: null }); openList(); });
         const away = awayLink();
         head.append(back, icon(G.vibe), title, away);
         const list = h('ol', 'ovdk-msgs'); list.setAttribute('aria-live', 'polite');
